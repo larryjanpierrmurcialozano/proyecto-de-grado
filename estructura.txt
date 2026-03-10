@@ -1,0 +1,17 @@
+backend/
+├── iniciador.py
+├── iniciador_backup.py
+├── utils/
+│   ├── database.py        Pool de conexiones
+│   ├── constants.py       Constantes globales
+│   └── helpers.py         hash, log, decoradores
+├── routes/ 
+│   ├── auth.py           
+│   ├── usuarios.py         rutas CRUD usuarios
+│   ├── estudiantes.py     rutas CRUD estudiantes
+│   ├── docentes.py        rutas docentes
+│   ├── academico.py      rutas grados, materias, periodos
+│   ├── registros.py     rutas asistencia, observador
+│   ├── comunicados.py     rutas comunicados
+│   └── reportes.py        rutas y correo SMTP
+└── backend/        Templates, static, uploads
