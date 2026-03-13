@@ -20,6 +20,5 @@
 #           calificaciones.xlsx
 #       grado 11/
 #           calificaciones.xlsx
-
 from typing import List
 import mysql.connector
