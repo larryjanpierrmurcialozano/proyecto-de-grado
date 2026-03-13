@@ -29,7 +29,7 @@
 #       POST: recibe un archivo excel con las calificaciones del grado #, y lo guarda en el archivo correspondiente
 #       PUT: actualiza las calificaciones del grado #, basadas en el archivo excel recibido
 #       DELETE: elimina el archivo excel con las calificaciones del grado #
-# grado (#) es literal como señalo el grado tipo 1 2 3 4 5 6 7  
+# grado (#) es literal como señalo el grado tipo 1 2 3 4 5 6 7 8 9 10 11, y se usara como parte del nombre del archivo y de la carpeta, esto con el fin de mantener un orden y facilitar la busqueda de las calificaciones.  
 # # numero de gradoscontenedor de grupos
 # sin embargo la idea es que se autogeneren estas funcionalidad de manera dinamica, es decir, 
 # que se tenga una ruta general para cada curso, y que se maneje el archivo excel de manera dinamica, 
