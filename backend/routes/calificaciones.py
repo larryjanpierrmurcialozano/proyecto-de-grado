@@ -340,12 +340,16 @@ def api_leer_planilla():
         ws = wb.active
         
         data = []
-        for row in ws.iter_rows(min_row=2, max_col=3, values_only=True):
+        for row in ws.iter_rows(min_row=2, max_col=7, values_only=True):
             if row[0]: # Si hay ID de estudiante
                 data.append({
                     'id_estudiante': row[0],
                     'nombre': row[1],
-                    'nota': row[2] if row[2] is not None else ''
+                    'act1': row[2] if row[2] is not None else '',
+                    'act2': row[3] if row[3] is not None else '',
+                    'act3': row[4] if row[4] is not None else '',
+                    'act4': row[5] if row[5] is not None else '',
+                    'nota': row[6] if row[6] is not None else '' # Nota_Final
                 })
                 
         return jsonify({'status': 'ok', 'alumnos': data}), 200
