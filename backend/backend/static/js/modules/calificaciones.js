@@ -147,11 +147,20 @@ const CalificacionesModule = {
             document.getElementById('btn-sincronizar').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
             document.getElementById('btn-sincronizar').disabled = true;
 
-            const res = await this.fetchData('/api/calificaciones/sincronizar_carpetas', { method: 'POST' });
-            alert(`${res.message}\nArchivos nuevos generados/verificados: ${res.archivos_en_sistema || 'N/A'}`);
+            const resp = await fetch('/api/calificaciones/sincronizar_carpetas', { method: 'POST' });
+            const data = await resp.json();
+            if (resp.status === 403) {
+                alert('Acceso denegado: no tienes permisos para ejecutar la sincronización masiva.');
+                return;
+            }
+            if (!resp.ok) {
+                throw new Error(data.error || ('HTTP ' + resp.status));
+            }
+
+            alert(`${data.message}\nArchivos nuevos generados/verificados: ${data.archivos_en_sistema || 'N/A'}`);
         } catch (e) {
             console.error(e);
-            alert('Error sincronizando: ' + e.message);
+            alert('Error sincronizando: ' + (e.message || e));
         } finally {
             document.getElementById('btn-sincronizar').innerHTML = "<i class='bx bx-sync'></i> Sincronización Total (Escritorio)";
             document.getElementById('btn-sincronizar').disabled = false;
