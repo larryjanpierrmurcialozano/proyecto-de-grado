@@ -32,7 +32,7 @@
 # sin embargo la idea es que se autogeneren estas funcionalidad de manera dinamica, es decir, 
 # que se tenga una ruta general para cada curso, y que se maneje el archivo excel de manera dinamica, 
 # sin necesidad de tener una ruta especifica para cada curso, esto con el fin de evitar la redundancia y facilitar el mantenimiento del codigo.
-# tambien hay que tener claro que lo que se busca es que el 
+# tambien hay que tener claro que lo que se busca es que al generar la
 from typing import List
 import mysql.connector
 from flask import Blueprint, jsonify, request, session
