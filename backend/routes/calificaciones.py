@@ -292,3 +292,159 @@ def api_generar_planilla():
     except Exception as e:
         return _error_interno(e)
 
+
+# ── 3. SUBIDA Y PROCESAMIENTO CON HISTORIAL (El Archivador Inmortal) ─────────
+
+@calificaciones_bp.route('/api/calificaciones/subir_planilla', methods=['POST'])
+def api_subir_planilla():
+    """
+    Ruta que recibe el archivo Excel que el profesor editó.
+    1. Si ya existía uno viejo, lo mueve a /historial_respaldos/ de forma permanente.
+    2. Guarda el nuevo en la ruta local correspondiente.
+    3. Lee el Excel, extrae las notas, y hace INSERT/UPDATE en la base de datos `notas`
+       validando con el ID oculto del estudiante en la Columna 1.
+    """
+    try:
+        # Validación de parámetros y archivo
+        grado_id = request.form.get('grado_id')
+        grupo_id = request.form.get('grupo_id')
+        materia_id = request.form.get('materia_id')
+        periodo_id = request.form.get('periodo_id', 1)
+        
+        if 'archivo_excel' not in request.files:
+            return jsonify({'error': 'No se envió el archivo de Excel'}), 400
+            
+        archivo = request.files['archivo_excel']
+        if archivo.filename == '':
+            return jsonify({'error': 'Archivo sin nombre o inválido'}), 400
+            
+        if not all([grado_id, grupo_id, materia_id]):
+            return jsonify({'error': 'Faltan parámetros (grado_id, grupo_id, materia_id)'}), 400
+
+        # Conectar a la DB para sacar los nombres de carpetas
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT g.numero_grado, gr.codigo_grupo, m.nombre_materia
+            FROM grados g, grupos gr, materias m
+            WHERE g.id_grado = %s AND gr.id_grupo = %s AND m.id_materia = %s
+        """, (grado_id, grupo_id, materia_id))
+        info = cursor.fetchone()
+        
+        if not info:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Datos de grado, grupo o materia no válidos'}), 404
+
+        # Construir rutas físicas exactas
+        materia_limpia = str(info['nombre_materia']).replace(" ", "_")
+        nombre_carpeta_grado = f"Grado_{info['numero_grado']}"
+        nombre_carpeta_grupo = f"Grupo_{info['codigo_grupo']}"
+        nombre_archivo = f"{materia_limpia}_G{info['numero_grado']}_{info['codigo_grupo']}_P{periodo_id}.xlsx"
+        
+        ruta_directorio = os.path.join(PLANILLAS_DIR, nombre_carpeta_grado, nombre_carpeta_grupo)
+        ruta_archivo_actual = os.path.join(ruta_directorio, nombre_archivo)
+        
+        os.makedirs(ruta_directorio, exist_ok=True)
+
+        # ---------------------------------------------------------
+        # FASE 1: El Archivador Inmortal (Backup del archivo viejo)
+        # ---------------------------------------------------------
+        if os.path.exists(ruta_archivo_actual):
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            nombre_historico = f"{nombre_archivo.replace('.xlsx', '')}_v{timestamp}.xlsx"
+            
+            # Crear subcarpeta estructurada dentro de historial por Grado y Grupo (mayor orden)
+            ruta_historial_dir = os.path.join(HISTORIAL_DIR, nombre_carpeta_grado, nombre_carpeta_grupo)
+            os.makedirs(ruta_historial_dir, exist_ok=True)
+            
+            ruta_historial_final = os.path.join(ruta_historial_dir, nombre_historico)
+            
+            # Movemos/Renombramos el archivo viejo al archivador para siempre
+            shutil.move(ruta_archivo_actual, ruta_historial_final)
+
+        # ---------------------------------------------------------
+        # FASE 2: Guardar el nuevo Excel maestro localmente
+        # ---------------------------------------------------------
+        archivo.save(ruta_archivo_actual)
+
+        # ---------------------------------------------------------
+        # FASE 3: Sincronización Inversa (Excel -> Base de Datos)
+        # ---------------------------------------------------------
+        # Abrimos el Excel en modo lectura para sacar solo los datos (data_only=True mejora el rendimiento)
+        wb = openpyxl.load_workbook(ruta_archivo_actual, data_only=True)
+        ws = wb.active
+        
+        # Debemos asegurar que el entorno preparó la Actividad central general 
+        # (Si quisieras múltiples actividades como nota 1, nota 2, se haría un bucle dinámico, 
+        # pero asumiremos una actividad base para registrar de prueba).
+        # Buscar o crear "Plantilla General" rápida para enganchar las notas.
+        cursor.execute("""
+            SELECT id_actividad FROM actividades 
+            WHERE id_materia = %s AND id_periodo = %s AND id_grupo = %s LIMIT 1
+        """, (materia_id, periodo_id, grupo_id))
+        actividad_row = cursor.fetchone()
+        
+        if not actividad_row:
+            # Si no hay actividad creada para subir la nota, la creamos "On the Fly"
+            cursor.execute("""
+                INSERT INTO actividades (nombre_actividad, descripcion, id_materia, id_periodo, id_grupo, id_plantilla)
+                VALUES ('Carga desde Planilla', 'Importado desde Excel', %s, %s, %s, NULL)
+            """, (materia_id, periodo_id, grupo_id))
+            conn.commit()
+            id_actividad = cursor.lastrowid
+        else:
+            id_actividad = actividad_row['id_actividad']
+
+        notas_procesadas = 0
+        
+        # Iterar desde la fila 2 (evitando encabezados)
+        for fila in ws.iter_rows(min_row=2, max_col=5, values_only=True):
+            # Formato de array fila: (ID_Estudiante, Nombre, Nota1, Nota2, Nota3)
+            # fila[0] es ID, fila[2] es la Nota 1 (Columna C)
+            id_est_excel = fila[0]
+            nota_1 = fila[2] 
+            
+            if id_est_excel and isinstance(id_est_excel, int) and nota_1 is not None:
+                # Comprobar si ya tiene nota
+                cursor.execute("""
+                    SELECT id_nota FROM notas 
+                    WHERE id_estudiante = %s AND id_actividad = %s
+                """, (id_est_excel, id_actividad))
+                
+                nota_existente = cursor.fetchone()
+                
+                try:
+                    valor_nota = float(nota_1)
+                    if nota_existente:
+                        # UPDATE
+                        cursor.execute("""
+                            UPDATE notas SET puntaje_obtenido = %s 
+                            WHERE id_nota = %s
+                        """, (valor_nota, nota_existente['id_nota']))
+                    else:
+                        # INSERT
+                        cursor.execute("""
+                            INSERT INTO notas (id_estudiante, id_actividad, puntaje_obtenido)
+                            VALUES (%s, %s, %s)
+                        """, (id_est_excel, id_actividad, valor_nota))
+                    notas_procesadas += 1
+                except ValueError:
+                    # Si el profe escribió "Hola" en vez de un número, lo ignoramos de la DB
+                    pass 
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            'status': 'ok',
+            'message': 'Planilla subida exitosamente.',
+            'notas_procesadas': notas_procesadas,
+            'archivo_viejo_respaldado': os.path.exists(ruta_archivo_actual) # Confirmación de que se hizo backup si existía
+        }), 200
+
+    except Exception as e:
+        return _error_interno(e)
+
