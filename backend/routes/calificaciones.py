@@ -7,6 +7,7 @@
 # todo se tratara de guardar en formato excel, usando libreria openpyxl, y se guardara en una carpeta especifica para cada curso, 
 # dentro de una carpeta general de calificaciones, esto con el fin de mantener un orden y facilitar la busqueda de las calificaciones. 
 #   todo se tendra una estructura de carpetas asi:
-#   calificaciones
+#   calificaciones/
+#       curso_1/
 from typing import List
 import mysql.connector
