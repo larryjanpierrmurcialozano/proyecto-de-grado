@@ -1,5 +1,14 @@
 if __name__ == '__main__':
     import traceback
+    import sys, os
+
+    # Asegurar que el paquete `utils` y `routes` sean importables cuando se ejecuta
+    # este script desde la raíz del repositorio o desde cualquier otra ruta.
+    THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+    BACKEND_DIR = os.path.dirname(THIS_DIR)
+    if BACKEND_DIR not in sys.path:
+        sys.path.insert(0, BACKEND_DIR)
+
     from utils.database import get_db
     from routes import calificaciones
     
