@@ -9,7 +9,7 @@
 #   todo se tendra una estructura de carpetas asi:
 #   calificaciones/
 #       grado #/ 
-#                grupo #/
+#                grupo #/ 
 #           calificaciones.xlsx
 #           calificaciones.xlsx / todo para cada curso por grupos
 #  el chiste de todo es usar archivos excel como referencia, que sean editable dentro de la aplicacion 
