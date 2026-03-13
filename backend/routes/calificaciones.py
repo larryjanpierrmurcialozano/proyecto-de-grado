@@ -222,13 +222,29 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1):
 @calificaciones_bp.route('/api/calificaciones/sincronizar_carpetas', methods=['POST'])
 def api_sincronizar_carpetas():
     """
-    Lee toda la estructura académica y genera TODOS los Excel automáticamente.
+    Crea la estructura de carpetas para todos los grados y grupos que existan en el sistema.
+    Luego genera los Excel únicamente para las materias asignadas.
     """
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
         
-        # Obtener todas las asignaciones de docentes (que cruzan Materias, Grupos y Grados)
+        # 1. Crear carpetas para absolutamente todos los Grados y Grupos existentes
+        cursor.execute("""
+            SELECT g.numero_grado, gr.codigo_grupo 
+            FROM grupos gr
+            JOIN grados g ON gr.id_grado = g.id_grado
+        """)
+        todos_los_grupos = cursor.fetchall()
+        
+        carpetas_creadas = 0
+        for grupo in todos_los_grupos:
+            ruta = os.path.join(PLANILLAS_DIR, f"Grado_{grupo['numero_grado']}", f"Grupo_{grupo['codigo_grupo']}")
+            if not os.path.exists(ruta):
+                os.makedirs(ruta, exist_ok=True)
+                carpetas_creadas += 1
+
+        # 2. Obtener todas las asignaciones (Materias designadas)
         cursor.execute("""
             SELECT id_grado, id_grupo, id_materia 
             FROM asignaciones_docente WHERE estado = 'Activa'
@@ -244,7 +260,7 @@ def api_sincronizar_carpetas():
                 
         return jsonify({
             'status': 'ok',
-            'message': f'Sincronización completa. Base instalada en: {PLANILLAS_DIR}',
+            'message': f'Sincronización completa. Carpetas de grados/grupos verificadas. {carpetas_creadas} nuevas carpetas creadas.',
             'archivos_en_sistema': archivos_creados
         }), 200
 
