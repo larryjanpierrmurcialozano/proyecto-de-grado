@@ -54,4 +54,4 @@ from flask import Blueprint, jsonify, request, session
 from utils.database import get_db
 from utils.helpers import _error_interno
 calificaciones_bp = Blueprint('calificaciones', __name__)
-def a
+def api
