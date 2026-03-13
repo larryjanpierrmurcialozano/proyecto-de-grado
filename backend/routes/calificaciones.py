@@ -113,60 +113,139 @@ from utils.helpers import _error_interno
 
 calificaciones_bp = Blueprint('calificaciones', __name__)
 
-# ── CONFIGURACIÓN DE CARPETAS LOCALES ────────────────────────────────────────
+# ── CONFIGURACIÓN DE CARPETAS LOCALES (EN EL ESCRITORIO DEL USUARIO) ────────
 
-# Directorios base en el backend (se crearán en 'backend/planillas_locales')
-BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-PLANILLAS_DIR = os.path.join(BACKEND_DIR, 'planillas_locales')
-HISTORIAL_DIR = os.path.join(BACKEND_DIR, 'historial_respaldos')
+def obtener_ruta_escritorio():
+    usuario_dir = os.path.expanduser("~")
+    # Intentar varias rutas comunes (Windows en español, OneDrive, etc.)
+    rutas_posibles = [
+        os.path.join(usuario_dir, "OneDrive", "Escritorio"),
+        os.path.join(usuario_dir, "Desktop"),
+        os.path.join(usuario_dir, "Escritorio")
+    ]
+    for ruta in rutas_posibles:
+        if os.path.exists(ruta):
+            return ruta
+    return usuario_dir # Fallback
+
+ESCRITORIO = obtener_ruta_escritorio()
+PLANILLAS_DIR = os.path.join(ESCRITORIO, 'Planillas_DocstrY')
+HISTORIAL_DIR = os.path.join(ESCRITORIO, 'Planillas_DocstrY_Historial')
 
 # Garantizar que el Archivador Histórico y la Carpeta Local existan al iniciar
 os.makedirs(PLANILLAS_DIR, exist_ok=True)
 os.makedirs(HISTORIAL_DIR, exist_ok=True)
 
 
-# ── 1. SINCRONIZADOR DE CARPETAS (Desde la DB hacia el sistema local) ────────
+def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1):
+    """Función interna para crear un archivo Excel si no existe o se requiere forzar"""
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+    
+    # 1. Obtener la info del Grado, Grupo y Materia para el nombre del archivo
+    cursor.execute("""
+        SELECT g.numero_grado, gr.codigo_grupo, m.nombre_materia, m.codigo_materia
+        FROM grados g, grupos gr, materias m
+        WHERE g.id_grado = %s AND gr.id_grupo = %s AND m.id_materia = %s
+    """, (grado_id, grupo_id, materia_id))
+    info = cursor.fetchone()
+    
+    if not info:
+        cursor.close(); conn.close()
+        return None
+
+    # 2. Estudiantes
+    cursor.execute("""
+        SELECT id_estudiante, nombre, apellido, documento_identidad
+        FROM estudiantes
+        WHERE id_grupo = %s AND estado = 'Activo'
+        ORDER BY apellido, nombre
+    """, (grupo_id,))
+    estudiantes = cursor.fetchall()
+    
+    cursor.close(); conn.close()
+
+    # 3. Preparar la ruta
+    nombre_carpeta_grado = f"Grado_{info['numero_grado']}"
+    nombre_carpeta_grupo = f"Grupo_{info['codigo_grupo']}"
+    ruta_directorio = os.path.join(PLANILLAS_DIR, nombre_carpeta_grado, nombre_carpeta_grupo)
+    os.makedirs(ruta_directorio, exist_ok=True) 
+    
+    materia_limpia = str(info['nombre_materia']).replace(" ", "_").replace("/", "-")
+    nombre_archivo = f"{materia_limpia}_G{info['numero_grado']}_{info['codigo_grupo']}_P{periodo_id}.xlsx"
+    ruta_archivo = os.path.join(ruta_directorio, nombre_archivo)
+
+    # 4. Creación del Excel si NO existe (o si se fuerza reescritura)
+    if os.path.exists(ruta_archivo):
+        return ruta_archivo # Ya existe, no lo vamos a destruir
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"Notas - P{periodo_id}"
+    
+    header_fill = PatternFill(start_color="3B82F6", end_color="3B82F6", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
+    bloqueado = Protection(locked=True)
+    desbloqueado = Protection(locked=False)
+    
+    headers = ['ID_Estudiante', 'Apellidos y Nombres', 'Nota']
+    ws.append(headers)
+    
+    for col, title in enumerate(headers, start=1):
+        celda = ws.cell(row=1, column=col)
+        celda.fill = header_fill
+        celda.font = header_font
+        celda.protection = bloqueado
+    
+    for row_num, est in enumerate(estudiantes, start=2):
+        celda_id = ws.cell(row=row_num, column=1, value=est['id_estudiante'])
+        celda_id.protection = bloqueado
+        
+        nombre_completo = f"{est['apellido']} {est['nombre']}"
+        celda_noms = ws.cell(row=row_num, column=2, value=nombre_completo)
+        celda_noms.protection = bloqueado
+
+        # Celda Nota
+        celda_nota = ws.cell(row=row_num, column=3)
+        celda_nota.protection = desbloqueado
+            
+    ws.column_dimensions['A'].hidden = True
+    ws.column_dimensions['B'].width = 35
+    ws.protection.sheet = True
+
+    wb.save(ruta_archivo)
+    return ruta_archivo
+
+
+# ── 1. SINCRONIZADOR MASIVO (Desde la DB hacia el sistema local) ────────
 
 @calificaciones_bp.route('/api/calificaciones/sincronizar_carpetas', methods=['POST'])
 def api_sincronizar_carpetas():
     """
-    Ruta para que el sistema lea la base de datos y cree automáticamente
-    toda la estructura de carpetas físicas (Grados y Grupos) en el servidor,
-    preparando el terreno para los archivos Excel.
+    Lee toda la estructura académica y genera TODOS los Excel automáticamente.
     """
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
         
-        # Obtenemos todos los grupos activos con su información de grado
+        # Obtener todas las asignaciones de docentes (que cruzan Materias, Grupos y Grados)
         cursor.execute("""
-            SELECT g.numero_grado, g.nombre_grado, gr.codigo_grupo, gr.id_grupo, g.id_grado
-            FROM grupos gr
-            JOIN grados g ON gr.id_grado = g.id_grado
+            SELECT id_grado, id_grupo, id_materia 
+            FROM asignaciones_docente WHERE estado = 'Activa'
         """)
-        grupos = cursor.fetchall()
+        asignaciones = cursor.fetchall()
+        cursor.close(); conn.close()
         
-        rutas_creadas = []
-        
-        for grupo in grupos:
-            # Formateamos los nombres de forma segura para carpetas (ej. Grado_7/Grupo_A)
-            grado_nombre_carpeta = f"Grado_{grupo['numero_grado']}"
-            grupo_nombre_carpeta = f"Grupo_{grupo['codigo_grupo']}"
-            
-            # Construimos la ruta: /planillas_locales/Grado_7/Grupo_A/
-            ruta_fisica = os.path.join(PLANILLAS_DIR, grado_nombre_carpeta, grupo_nombre_carpeta)
-            
-            if not os.path.exists(ruta_fisica):
-                os.makedirs(ruta_fisica, exist_ok=True)
-                rutas_creadas.append(ruta_fisica)
+        archivos_creados = 0
+        for asig in asignaciones:
+            res = _crear_excel_fisico(asig['id_grado'], asig['id_grupo'], asig['id_materia'])
+            if res:
+                archivos_creados += 1
                 
-        cursor.close()
-        conn.close()
-        
         return jsonify({
             'status': 'ok',
-            'message': 'Árbol de carpetas sincronizado con la Base de Datos.',
-            'carpetas_nuevas': len(rutas_creadas)
+            'message': f'Sincronización completa. Base instalada en: {PLANILLAS_DIR}',
+            'archivos_en_sistema': archivos_creados
         }), 200
 
     except Exception as e:
