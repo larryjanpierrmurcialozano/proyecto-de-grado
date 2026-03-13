@@ -32,7 +32,7 @@
 # sin embargo la idea es que se autogeneren estas funcionalidad de manera dinamica, es decir, 
 # que se tenga una ruta general para cada curso, y que se maneje el archivo excel de manera dinamica, 
 # sin necesidad de tener una ruta especifica para cada curso, esto con el fin de evitar la redundancia y facilitar el mantenimiento del codigo.
-# tambien hay que tener claro que lo que se busca es que al generar el excel de cada grado se autogenere con el valor seleccionado salido de la lista, tipo en caso de seleccionar el grado 7, que se genere el excel con el nombre grado_7
+# tambien hay que tener claro que lo que se busca es que al generar el excel de cada grado se autogenere con el valor seleccionado salido de la lista, tipo en caso de seleccionar el grado 7, que se genere el excel con el nombre grado_7_calificaciones.xlsx 
 from typing import List
 import mysql.connector
 from flask import Blueprint, jsonify, request, session
