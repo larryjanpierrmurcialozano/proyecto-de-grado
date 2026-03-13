@@ -11,7 +11,7 @@
 #       grado #/ 
 #                grupo #/ 
 #                          materias #/
-#           materia_#(en este espacio de numeral para materias se decidira poner 2 valores tipo el grado y grupo perteneciente, siendo tal que se vea "materia_g6_A_")_calificaciones.xlsx
+#           materia_#(en este espacio de numeral para materias se decidira poner 2 valores tipo el grado y grupo perteneciente, siendo tal que se vea "materia_g6_A_calificaciones")_calificaciones.xlsx
 #           calificaciones.xlsx / todo para cada curso por grupos
 #  el chiste de todo es usar archivos excel como referencia, que sean editable dentro de la aplicacion 
 # y que se puedan descargar o subir al sistema para asi mantener cierta flexibilidad y facilidad de uso.
