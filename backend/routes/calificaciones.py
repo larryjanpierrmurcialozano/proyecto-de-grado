@@ -10,5 +10,8 @@
 #   calificaciones/
 #       curso_1/
 #           calificaciones.xlsx
+#       curso_2/
+#           calificaciones.xlsx
+#       ...
 from typing import List
 import mysql.connector
