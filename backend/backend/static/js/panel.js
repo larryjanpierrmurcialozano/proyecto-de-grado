@@ -327,7 +327,6 @@ function cargarPagina(pagina) {
         case 'horarios':        renderHorarios(); break;
         case 'horarios-gestion': renderHorariosGestion(); break;
         case 'periodos':        renderPlaceholder('Gestión de Períodos', 'fa-calendar-alt'); break;
-        case 'calificaciones':  renderPlaceholder('Gestión de Calificaciones', 'fa-star'); break;
         case 'asistencia':      renderPlaceholder('Control de Asistencia', 'fa-clipboard-check'); break;
         case 'observador':      renderPlaceholder('Observador del Estudiante', 'fa-eye'); break;
         case 'logs':            renderPlaceholder('Logs del Sistema', 'fa-history'); break;
