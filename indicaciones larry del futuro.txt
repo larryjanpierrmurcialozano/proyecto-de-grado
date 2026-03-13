@@ -1,1 +1,2 @@
-hola larry, en caso de que lo olvides, puede que olvides ciertas cositas o cometas errores, tienes el control de git en control shift g, luego en la parte de arriba aparece un coso con formas raras, tipo como si fuera un control de git, se llama git graph
+hola larry, en caso de que lo olvides, puede que olvides ciertas cositas o cometas errores, tienes el control de git en control shift g, 
+luego en la parte de arriba aparece un coso con formas raras, tipo como si fuera un control de git, se llama git graph
