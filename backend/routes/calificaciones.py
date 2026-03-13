@@ -59,3 +59,4 @@ if __name__ == '__main__':
      finally:
         if 'cursor' in locals():
             cursor.close()
+        if 'conn' in locals():
