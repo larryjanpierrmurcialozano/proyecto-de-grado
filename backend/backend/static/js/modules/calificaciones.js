@@ -135,7 +135,7 @@ const CalificacionesModule = {
         try {
             const res = await callApi('/api/materias');
              res.materias.forEach(m => {
-                 selectMateria.innerHTML += \`<option value="\${m.id_materia}">\${m.nombre_materia}</option>\`;
+                 selectMateria.innerHTML += `<option value="${m.id_materia}">${m.nombre_materia}</option>`;
              });
              selectMateria.disabled = false;
         } catch(e) { console.error(e); }
