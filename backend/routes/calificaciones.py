@@ -9,7 +9,7 @@
 #   todo se tendra una estructura de carpetas asi:
 #   calificaciones/
 #       grado 6/ 
-#                grupo A/
+#                grupo /
 #           calificaciones.xlsx
 #       grado 7/
 #           calificaciones.xlsx 
