@@ -19,6 +19,6 @@
 #       grado 10/
 #           calificaciones.xlsx
 #       grado 11/
-#           calificaciones.xlsx
+#           calificaciones.xlsx 
 from typing import List
 import mysql.connector
