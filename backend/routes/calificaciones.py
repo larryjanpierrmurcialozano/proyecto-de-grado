@@ -37,6 +37,7 @@
 # que se guarde en la carpeta correspondiente, y que al descargarlo se descargue con ese nombre, y al subirlo se suba con ese nombre, 
 # claro, se creara es una carpeta del grado con el nombre del grado, y dentro de esa carpeta se creara un archivo excel con el nombre del grupo, 
 # esto con el fin de mantener un orden y facilitar la busqueda de las calificaciones.
+#
 from typing import List
 import mysql.connector
 from flask import Blueprint, jsonify, request, session
