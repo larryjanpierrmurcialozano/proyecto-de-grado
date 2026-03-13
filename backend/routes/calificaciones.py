@@ -28,7 +28,7 @@
 #       GET: devuelve el archivo excel con las calificaciones del grado #
 #       POST: recibe un archivo excel con las calificaciones del grado #, y lo guarda en el archivo correspondiente
 #       PUT: actualiza las calificaciones del grado #, basadas en el archivo excel recibido
-#       DELETE: elimina el archivo excel con las calificaciones del grado 6
+#       DELETE: elimina el archivo excel con las calificaciones del grado 3
 # sin embargo la idea es que se autogeneren estas funcionalidad de manera dinamica, es decir, 
 # que se tenga una ruta general para cada curso, y que se maneje el archivo excel de manera dinamica, 
 # sin necesidad de tener una ruta especifica para cada curso, esto con el fin de evitar la redundancia y facilitar el mantenimiento del codigo.
