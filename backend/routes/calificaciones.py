@@ -188,7 +188,7 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1):
     bloqueado = Protection(locked=True)
     desbloqueado = Protection(locked=False)
     
-    headers = ['ID_Estudiante', 'Apellidos y Nombres', 'Nota']
+    headers = ['ID_Estudiante', 'Apellidos y Nombres', 'Actividad 1', 'Actividad 2', 'Actividad 3', 'Actividad 4', 'Nota_Final']
     ws.append(headers)
     
     for col, title in enumerate(headers, start=1):
@@ -205,9 +205,10 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1):
         celda_noms = ws.cell(row=row_num, column=2, value=nombre_completo)
         celda_noms.protection = bloqueado
 
-        # Celda Nota
-        celda_nota = ws.cell(row=row_num, column=3)
-        celda_nota.protection = desbloqueado
+        # Celdas Notas
+        for c_idx in range(3, 8):  # Columnas 3 a 7 (Act 1,2,3,4 y Nota Final)
+            celda_nota = ws.cell(row=row_num, column=c_idx)
+            celda_nota.protection = desbloqueado
             
     ws.column_dimensions['A'].hidden = True
     ws.column_dimensions['B'].width = 35
