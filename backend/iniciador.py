@@ -25,6 +25,7 @@ from routes.registros import registros_bp
 from routes.comunicados import comunicados_bp
 from routes.reportes import reportes_bp
 from routes.horarios import horarios_bp
+from routes.calificaciones import calificaciones_bp
 
 # ══════════════════════════════════════════════════════════════════════════════
 # CONFIGURACIÓN
