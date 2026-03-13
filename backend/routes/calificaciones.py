@@ -55,3 +55,4 @@ from utils.database import get_db
 from utils.helpers import _error_interno
 calificaciones_bp = Blueprint('calificaciones', __name__)
 @calificaciones_bp.route('/calificaciones', methods=['GET'])
+def
