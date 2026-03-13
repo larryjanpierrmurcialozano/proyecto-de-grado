@@ -322,6 +322,7 @@ function cargarPagina(pagina) {
         case 'materias':        renderMaterias(); break;
         case 'comunicados':     renderComunicados(); break;
         case 'reportes':        renderReportes(); break;
+        case 'calificaciones':  if (window.CalificacionesModule) { window.CalificacionesModule.init(); } else { renderPlaceholder('Calificaciones (Cargando...)', 'fa-star'); } break;
         // Módulos en desarrollo
         case 'horarios':        renderHorarios(); break;
         case 'horarios-gestion': renderHorariosGestion(); break;
