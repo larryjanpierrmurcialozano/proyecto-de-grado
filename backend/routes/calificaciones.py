@@ -103,11 +103,192 @@ from flask import Blueprint, jsonify, request, send_file
 import mysql.connector
 import os
 import shutil
-# import openpyxl # (Descomentar e instalar cuando codifiquemos los endpoints)
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Protection
+from openpyxl.worksheet.protection import SheetProtection
+from datetime import datetime
+
 from utils.database import get_db
 from utils.helpers import _error_interno
 
 calificaciones_bp = Blueprint('calificaciones', __name__)
 
-# ---> Aquí empezaremos a implementar las rutas correspondientes basadas en la documentación superior.
+# ── CONFIGURACIÓN DE CARPETAS LOCALES ────────────────────────────────────────
+
+# Directorios base en el backend (se crearán en 'backend/planillas_locales')
+BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+PLANILLAS_DIR = os.path.join(BACKEND_DIR, 'planillas_locales')
+HISTORIAL_DIR = os.path.join(BACKEND_DIR, 'historial_respaldos')
+
+# Garantizar que el Archivador Histórico y la Carpeta Local existan al iniciar
+os.makedirs(PLANILLAS_DIR, exist_ok=True)
+os.makedirs(HISTORIAL_DIR, exist_ok=True)
+
+
+# ── 1. SINCRONIZADOR DE CARPETAS (Desde la DB hacia el sistema local) ────────
+
+@calificaciones_bp.route('/api/calificaciones/sincronizar_carpetas', methods=['POST'])
+def api_sincronizar_carpetas():
+    """
+    Ruta para que el sistema lea la base de datos y cree automáticamente
+    toda la estructura de carpetas físicas (Grados y Grupos) en el servidor,
+    preparando el terreno para los archivos Excel.
+    """
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Obtenemos todos los grupos activos con su información de grado
+        cursor.execute("""
+            SELECT g.numero_grado, g.nombre_grado, gr.codigo_grupo, gr.id_grupo, g.id_grado
+            FROM grupos gr
+            JOIN grados g ON gr.id_grado = g.id_grado
+        """)
+        grupos = cursor.fetchall()
+        
+        rutas_creadas = []
+        
+        for grupo in grupos:
+            # Formateamos los nombres de forma segura para carpetas (ej. Grado_7/Grupo_A)
+            grado_nombre_carpeta = f"Grado_{grupo['numero_grado']}"
+            grupo_nombre_carpeta = f"Grupo_{grupo['codigo_grupo']}"
+            
+            # Construimos la ruta: /planillas_locales/Grado_7/Grupo_A/
+            ruta_fisica = os.path.join(PLANILLAS_DIR, grado_nombre_carpeta, grupo_nombre_carpeta)
+            
+            if not os.path.exists(ruta_fisica):
+                os.makedirs(ruta_fisica, exist_ok=True)
+                rutas_creadas.append(ruta_fisica)
+                
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'status': 'ok',
+            'message': 'Árbol de carpetas sincronizado con la Base de Datos.',
+            'carpetas_nuevas': len(rutas_creadas)
+        }), 200
+
+    except Exception as e:
+        return _error_interno(e)
+
+
+# ── 2. GENERADOR DE PLANILLAS EXCEL CONGELADA (Offline First) ────────────────
+
+@calificaciones_bp.route('/api/calificaciones/generar_planilla', methods=['GET'])
+def api_generar_planilla():
+    """
+    Endpoint maestro.
+    Recibe por parámetros el ID de grado, grupo, materia y periodo.
+    Consulta la DB, crea la carpeta si falta, y genera un Excel bloqueado donde
+    el profesor solo puede editar las notas.
+    """
+    grado_id = request.args.get('grado_id')
+    grupo_id = request.args.get('grupo_id')
+    materia_id = request.args.get('materia_id')
+    periodo_id = request.args.get('periodo_id', 1)  # Ejemplo, por defecto 1
+
+    if not all([grado_id, grupo_id, materia_id]):
+        return jsonify({'error': 'Faltan parámetros (grado_id, grupo_id, materia_id)'}), 400
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # 1. Obtener la info del Grado, Grupo y Materia para el nombre del archivo
+        cursor.execute("""
+            SELECT g.numero_grado, gr.codigo_grupo, m.nombre_materia, m.codigo_materia
+            FROM grados g, grupos gr, materias m
+            WHERE g.id_grado = %s AND gr.id_grupo = %s AND m.id_materia = %s
+        """, (grado_id, grupo_id, materia_id))
+        info = cursor.fetchone()
+        
+        if not info:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Datos de grado, grupo o materia no existen.'}), 404
+
+        # 2. Consultar todos los estudiantes activos en este grupo
+        cursor.execute("""
+            SELECT id_estudiante, nombre, apellido, documento_identidad
+            FROM estudiantes
+            WHERE id_grupo = %s AND estado = 'Activo'
+            ORDER BY apellido, nombre
+        """, (grupo_id,))
+        estudiantes = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+
+        # 3. Preparar la ruta y el nombre del archivo (Estructura física)
+        nombre_carpeta_grado = f"Grado_{info['numero_grado']}"
+        nombre_carpeta_grupo = f"Grupo_{info['codigo_grupo']}"
+        ruta_directorio = os.path.join(PLANILLAS_DIR, nombre_carpeta_grado, nombre_carpeta_grupo)
+        os.makedirs(ruta_directorio, exist_ok=True) # Creamos si de casualidad no existe
+        
+        # Formato: materia_G7_A_Periodo1.xlsx
+        materia_limpia = str(info['nombre_materia']).replace(" ", "_")
+        nombre_archivo = f"{materia_limpia}_G{info['numero_grado']}_{info['codigo_grupo']}_P{periodo_id}.xlsx"
+        ruta_archivo = os.path.join(ruta_directorio, nombre_archivo)
+
+        # ---------------------------------------------------------------------
+        # 4. Magia de creación del Excel (Doble Capa de Seguridad)
+        # ---------------------------------------------------------------------
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = f"Notas - P{periodo_id}"
+        
+        # Estilos visuales listos para diseño
+        header_fill = PatternFill(start_color="3B82F6", end_color="3B82F6", fill_type="solid")
+        header_font = Font(color="FFFFFF", bold=True)
+        bloqueado = Protection(locked=True)
+        desbloqueado = Protection(locked=False)
+        
+        # Construimos el encabezado. ¡Columnas 1 y 2 tienen la clave! 
+        # (El documento oculto para tu control, y los nombres para el profesor)
+        headers = ['ID_Estudiante (NO TOCAR)', 'Apellidos y Nombres', 'Nota 1', 'Nota 2', 'Nota 3']
+        ws.append(headers)
+        
+        for col, title in enumerate(headers, start=1):
+            celda = ws.cell(row=1, column=col)
+            celda.fill = header_fill
+            celda.font = header_font
+            celda.protection = bloqueado
+        
+        # Rellenar con estudiantes y preparar celdas de escritura
+        for row_num, est in enumerate(estudiantes, start=2):
+            # Col 1: ID - lo ponemos en la celda y lo protegemos
+            celda_id = ws.cell(row=row_num, column=1, value=est['id_estudiante'])
+            celda_id.protection = bloqueado
+            
+            # Col 2: Nombres
+            nombre_completo = f"{est['apellido']} {est['nombre']}"
+            celda_noms = ws.cell(row=row_num, column=2, value=nombre_completo)
+            celda_noms.protection = bloqueado
+
+            # Celdas Notas: ¡DESBLOQUEADAS! Aquí el profe escribe
+            for col_nota in range(3, 6):
+                celda_nota = ws.cell(row=row_num, column=col_nota)
+                celda_nota.protection = desbloqueado
+                
+        # Opcional (Si quieres esconder la columna de ID que usa el sistema)
+        ws.column_dimensions['A'].hidden = True
+        ws.column_dimensions['B'].width = 35
+
+        # ACTIVA LA PROTECION GLOBAL DE LA HOJA
+        ws.protection.sheet = True # Esto bloquea todo EXCEPTO las celdas que marcamos como "desbloqueado"
+
+        # Guardar en el disco (Almacenamiento Local Offline First)
+        wb.save(ruta_archivo)
+
+        # Enviar archivo al profesor para descargar
+        return send_file(
+            ruta_archivo,
+            as_attachment=True,
+            download_name=nombre_archivo,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+    except Exception as e:
+        return _error_interno(e)
 
