@@ -86,7 +86,7 @@ const CalificacionesModule = {
     async sincronizarCarpetas() {
         try {
             const res = await callApi('/api/calificaciones/sincronizar_carpetas', 'POST', {});
-            alert(\`Carpetas sincronizadas correctamente. \${res.carpetas_nuevas} creadas localmente.\`);
+            alert(`Carpetas sincronizadas correctamente. ${res.carpetas_nuevas} creadas localmente.`);
         } catch (e) {
             console.error(e);
             alert('Error sincronizando carpetas: ' + e);
