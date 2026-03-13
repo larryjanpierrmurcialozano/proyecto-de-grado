@@ -41,7 +41,7 @@
 # podria recrear una especia de explorador de archivos dentro del modulo de calificaciones, donde se pueda ver la estructura de carpetas y archivos, 
 # y se pueda navegar por ella y se pueda selecionar todos las carpetas y rutas, sin importar si es profesor o admin, cada uno tendra un sistema de 
 # gestion de carpetas propio, claro la idea es que el profesor solo vea las carpetas y archivos que le corresponden a sus grados y grupos de 
-# materias asignadas, y el admin/director/cordinador, 
+# materias asignadas, y el admin/director/cordinador, tendra una vista de todas las carpetas y archivos dentro del sistema, todo organizado 
 from typing import List
 import mysql.connector
 from flask import Blueprint, jsonify, request, session
