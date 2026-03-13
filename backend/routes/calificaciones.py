@@ -29,7 +29,7 @@
 #       POST: recibe un archivo excel con las calificaciones del grado 6, y lo guarda en el archivo correspondiente
 #       PUT: actualiza las calificaciones del grado 6, basadas en el archivo excel recibido
 #       DELETE: elimina el archivo excel con las calificaciones del grado 6
-# sin embargo la idea es que se autogeneren estas funcionalidad de 
+# sin embargo la idea es que se autogeneren estas funcionalidad de manera dinamica, es decir, que se tenga una ruta general para cada curso, y que se maneje el archivo excel de manera dinamica, sin necesidad de tener una ruta especifica para cada curso, esto con el fin de evitar la redundancia y facilitar el mantenimiento del codigo.
 from typing import List
 import mysql.connector
 from flask import Blueprint, jsonify, request, session
