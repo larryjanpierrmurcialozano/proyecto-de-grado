@@ -25,7 +25,7 @@
 # este sistema tambien podra incluir funcionalidades como el calculo de promedios, la generacion de reportes, la exportacion a pdf, etc.
 # todo se tendra una ruta para cada funcionalidad, por ejemplo:
 #   /calificaciones/grado_#_calificaciones
-#       GET: devuelve el archivo excel con las calificaciones del grado 6
+#       GET: devuelve el archivo excel con las calificaciones del grado #
 #       POST: recibe un archivo excel con las calificaciones del grado 6, y lo guarda en el archivo correspondiente
 #       PUT: actualiza las calificaciones del grado 6, basadas en el archivo excel recibido
 #       DELETE: elimina el archivo excel con las calificaciones del grado 6
