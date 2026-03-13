@@ -483,14 +483,13 @@ def api_subir_planilla():
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             nombre_historico = f"{nombre_archivo.replace('.xlsx', '')}_v{timestamp}.xlsx"
             
-            # Crear subcarpeta estructurada dentro de historial por Grado y Grupo (mayor orden)
             ruta_historial_dir = os.path.join(HISTORIAL_DIR, nombre_carpeta_grado, nombre_carpeta_grupo)
             os.makedirs(ruta_historial_dir, exist_ok=True)
             
             ruta_historial_final = os.path.join(ruta_historial_dir, nombre_historico)
             
-            # Movemos/Renombramos el archivo viejo al archivador para siempre
-            shutil.move(ruta_archivo_actual, ruta_historial_final)
+            # Copiar en lugar de mover para asegurar que la descarga/sobrescritura no falle
+            shutil.copy2(ruta_archivo_actual, ruta_historial_final)
 
         # ---------------------------------------------------------
         # FASE 2: Guardar el nuevo Excel maestro localmente
