@@ -20,7 +20,7 @@
 #           calificaciones.xlsx
 #       grado 11/
 #           calificaciones.xlsx / todo para cada curso
-#  el chiste de todo es usar archivos excel como referencia, que sean editable dentro de la aplicacion y que se puedan descargar o subir al sistema para asi 
+#  el chiste de todo es usar archivos excel como referencia, que sean editable dentro de la aplicacion y que se puedan descargar o subir al sistema para asi mantener cierta flexi
 from typing import List
 import mysql.connector
 from flask import Blueprint, jsonify, request, session
