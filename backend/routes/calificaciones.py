@@ -55,4 +55,12 @@ from utils.database import get_db
 from utils.helpers import _error_interno
 calificaciones_bp = Blueprint('calificaciones', __name__)
 @calificaciones_bp.route('/calificaciones', methods=['GET'])
-def
+def get_calificaciones():
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM calificaciones")
+        calificaciones = cursor.fetchall()
+        return jsonify(calificaciones)
+    except mysql.connector.Error as err:
+        return _error_interno(str(err))
