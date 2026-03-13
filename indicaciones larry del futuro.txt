@@ -2,4 +2,4 @@ hola larry, en caso de que lo olvides, puede que olvides ciertas cositas o comet
 luego en la parte de arriba aparece un coso con formas raras, tipo como si fuera un control de git, se llama git graph, ahi tienes el control 
 total de todo el guion de cambios, asegurate de estar mirando la hora constantemente como ya estas acostumbrado, asi poder verificar que hay una
 version segura, en git graph puedes configurarles los nombres y guardarlos para mantenerlos como versiones estables, concentrate y realiza todo
-con tranquilidad tomando estas recomendaciones en cuenta, en son de paz larry chan del pasado.  {´-´}\/-
+con tranquilidad tomando estas recomendaciones en cuenta, en son de paz larry chan del pasado.  \/{´-´}\/-
