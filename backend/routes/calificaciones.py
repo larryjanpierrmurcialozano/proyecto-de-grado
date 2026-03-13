@@ -256,8 +256,7 @@ def api_sincronizar_carpetas(current_user):
         
         archivos_creados = 0
         for asig in asignaciones:
-            # Fuerza recrearlo para que obtenga el nuevo formato de columnas si no lo tenía.
-            res = _crear_excel_fisico(asig['id_grado'], asig['id_grupo'], asig['id_materia'], force_recreate=True)
+            res = _crear_excel_fisico(asig['id_grado'], asig['id_grupo'], asig['id_materia'])
             if res:
                 archivos_creados += 1
                 
