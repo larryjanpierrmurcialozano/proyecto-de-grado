@@ -239,18 +239,31 @@ const CalificacionesModule = {
         tbody.innerHTML = '';
         
         this.alumnosActuales.forEach((alumno, idx) => {
-             const val = alumno.nota !== null && alumno.nota !== undefined ? alumno.nota : '';
+             const getVal = (v) => v !== null && v !== undefined ? v : '';
              tbody.innerHTML += `
                 <tr>
                     <td>${alumno.id_estudiante}</td>
                     <td>${alumno.nombre}</td>
-                    <td contenteditable="true" 
-                        class="celda-nota-editable" 
-                        style="background-color:#ffffcc; cursor:text; text-align:center; font-weight:bold"
-                        data-id="${alumno.id_estudiante}"
-                        data-idx="${idx}">
-                        ${val}
-                    </td>
+                    <!-- Act 1 -->
+                    <td contenteditable="true" class="celda-nota-editable" 
+                        style="background-color:#ffffcc; cursor:text; text-align:center;"
+                        data-field="act1" data-idx="${idx}">${getVal(alumno.act1)}</td>
+                    <!-- Act 2 -->
+                    <td contenteditable="true" class="celda-nota-editable" 
+                        style="background-color:#ffffcc; cursor:text; text-align:center;"
+                        data-field="act2" data-idx="${idx}">${getVal(alumno.act2)}</td>
+                    <!-- Act 3 -->
+                    <td contenteditable="true" class="celda-nota-editable" 
+                        style="background-color:#ffffcc; cursor:text; text-align:center;"
+                        data-field="act3" data-idx="${idx}">${getVal(alumno.act3)}</td>
+                    <!-- Act 4 -->
+                    <td contenteditable="true" class="celda-nota-editable" 
+                        style="background-color:#ffffcc; cursor:text; text-align:center;"
+                        data-field="act4" data-idx="${idx}">${getVal(alumno.act4)}</td>
+                    <!-- Nota Final -->
+                    <td contenteditable="true" class="celda-nota-editable font-weight-bold" 
+                        style="background-color:#e6ffe6; cursor:text; text-align:center; font-weight:bold;"
+                        data-field="nota" data-idx="${idx}">${getVal(alumno.nota)}</td>
                 </tr>
              `;
         });
@@ -259,7 +272,8 @@ const CalificacionesModule = {
         document.querySelectorAll('.celda-nota-editable').forEach(celda => {
              celda.addEventListener('blur', (e) => {
                  const i = e.target.getAttribute('data-idx');
-                 this.alumnosActuales[i].nota = e.target.innerText;
+                 const field = e.target.getAttribute('data-field');
+                 this.alumnosActuales[i][field] = e.target.innerText;
              });
         });
     },
