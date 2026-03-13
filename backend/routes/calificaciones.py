@@ -8,7 +8,8 @@
 # dentro de una carpeta general de calificaciones, esto con el fin de mantener un orden y facilitar la busqueda de las calificaciones. 
 #   todo se tendra una estructura de carpetas asi:
 #   calificaciones/
-#       grado 6/
+#       grado 6/ 
+#                a
 #           calificaciones.xlsx
 #       grado 7/
 #           calificaciones.xlsx 
