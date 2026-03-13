@@ -137,7 +137,7 @@ os.makedirs(PLANILLAS_DIR, exist_ok=True)
 os.makedirs(HISTORIAL_DIR, exist_ok=True)
 
 
-def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1):
+def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recreate=False):
     """Función interna para crear un archivo Excel si no existe o se requiere forzar"""
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
@@ -176,7 +176,7 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1):
     ruta_archivo = os.path.join(ruta_directorio, nombre_archivo)
 
     # 4. Creación del Excel si NO existe (o si se fuerza reescritura)
-    if os.path.exists(ruta_archivo):
+    if os.path.exists(ruta_archivo) and not force_recreate:
         return ruta_archivo # Ya existe, no lo vamos a destruir
 
     wb = openpyxl.Workbook()
