@@ -11,15 +11,6 @@
 #       grado #/ 
 #                grupo #/
 #           calificaciones.xlsx
-#       grado 7/
-#           calificaciones.xlsx 
-#       grado 8/
-#           calificaciones.xlsx
-#       grado 9/
-#           calificaciones.xlsx
-#       grado 10/
-#           calificaciones.xlsx
-#       grado 11/
 #           calificaciones.xlsx / todo para cada curso
 #  el chiste de todo es usar archivos excel como referencia, que sean editable dentro de la aplicacion 
 # y que se puedan descargar o subir al sistema para asi mantener cierta flexibilidad y facilidad de uso.
