@@ -36,7 +36,7 @@
 # salido de la lista, tipo en caso de seleccionar el grado 7, que se genere el excel con el nombre grado_7_calificaciones.xlsx y 
 # que se guarde en la carpeta correspondiente, y que al descargarlo se descargue con ese nombre, y al subirlo se suba con ese nombre, 
 # esto con el fin de mantener un orden y facilitar la busqueda de las calificaciones.
-#
+# 
 from typing import List
 import mysql.connector
 from flask import Blueprint, jsonify, request, session
