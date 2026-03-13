@@ -288,77 +288,12 @@ def api_generar_planilla():
             return jsonify({'error': 'Datos de grado, grupo o materia no existen.'}), 404
 
         # 2. Consultar todos los estudiantes activos en este grupo
-        cursor.execute("""
-            SELECT id_estudiante, nombre, apellido, documento_identidad
-            FROM estudiantes
-            WHERE id_grupo = %s AND estado = 'Activo'
-            ORDER BY apellido, nombre
-        """, (grupo_id,))
-        estudiantes = cursor.fetchall()
+        ruta_archivo = _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id)
         
-        cursor.close()
-        conn.close()
-
-        # 3. Preparar la ruta y el nombre del archivo (Estructura física)
-        nombre_carpeta_grado = f"Grado_{info['numero_grado']}"
-        nombre_carpeta_grupo = f"Grupo_{info['codigo_grupo']}"
-        ruta_directorio = os.path.join(PLANILLAS_DIR, nombre_carpeta_grado, nombre_carpeta_grupo)
-        os.makedirs(ruta_directorio, exist_ok=True) # Creamos si de casualidad no existe
-        
-        # Formato: materia_G7_A_Periodo1.xlsx
-        materia_limpia = str(info['nombre_materia']).replace(" ", "_")
-        nombre_archivo = f"{materia_limpia}_G{info['numero_grado']}_{info['codigo_grupo']}_P{periodo_id}.xlsx"
-        ruta_archivo = os.path.join(ruta_directorio, nombre_archivo)
-
-        # ---------------------------------------------------------------------
-        # 4. Magia de creación del Excel (Doble Capa de Seguridad)
-        # ---------------------------------------------------------------------
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = f"Notas - P{periodo_id}"
-        
-        # Estilos visuales listos para diseño
-        header_fill = PatternFill(start_color="3B82F6", end_color="3B82F6", fill_type="solid")
-        header_font = Font(color="FFFFFF", bold=True)
-        bloqueado = Protection(locked=True)
-        desbloqueado = Protection(locked=False)
-        
-        # Construimos el encabezado. ¡Columnas 1 y 2 tienen la clave! 
-        # (El documento oculto para tu control, y los nombres para el profesor)
-        headers = ['ID_Estudiante (NO TOCAR)', 'Apellidos y Nombres', 'Nota 1', 'Nota 2', 'Nota 3']
-        ws.append(headers)
-        
-        for col, title in enumerate(headers, start=1):
-            celda = ws.cell(row=1, column=col)
-            celda.fill = header_fill
-            celda.font = header_font
-            celda.protection = bloqueado
-        
-        # Rellenar con estudiantes y preparar celdas de escritura
-        for row_num, est in enumerate(estudiantes, start=2):
-            # Col 1: ID - lo ponemos en la celda y lo protegemos
-            celda_id = ws.cell(row=row_num, column=1, value=est['id_estudiante'])
-            celda_id.protection = bloqueado
-            
-            # Col 2: Nombres
-            nombre_completo = f"{est['apellido']} {est['nombre']}"
-            celda_noms = ws.cell(row=row_num, column=2, value=nombre_completo)
-            celda_noms.protection = bloqueado
-
-            # Celdas Notas: ¡DESBLOQUEADAS! Aquí el profe escribe
-            for col_nota in range(3, 6):
-                celda_nota = ws.cell(row=row_num, column=col_nota)
-                celda_nota.protection = desbloqueado
-                
-        # Opcional (Si quieres esconder la columna de ID que usa el sistema)
-        ws.column_dimensions['A'].hidden = True
-        ws.column_dimensions['B'].width = 35
-
-        # ACTIVA LA PROTECION GLOBAL DE LA HOJA
-        ws.protection.sheet = True # Esto bloquea todo EXCEPTO las celdas que marcamos como "desbloqueado"
-
-        # Guardar en el disco (Almacenamiento Local Offline First)
-        wb.save(ruta_archivo)
+        if not ruta_archivo:
+             return jsonify({'error': 'Error interno al generar archivo físico'}), 500
+             
+        nombre_archivo = os.path.basename(ruta_archivo)
 
         # Enviar archivo al profesor para descargar
         return send_file(
@@ -369,6 +304,120 @@ def api_generar_planilla():
         )
 
     except Exception as e:
+        return _error_interno(e)
+
+# ── NUEVA RUTA: LEER EXCEL PARA PANTALLA (Grilla Web) ────────────────────────
+@calificaciones_bp.route('/api/calificaciones/leer_planilla', methods=['GET'])
+def api_leer_planilla():
+    grado_id = request.args.get('grado_id')
+    grupo_id = request.args.get('grupo_id')
+    materia_id = request.args.get('materia_id')
+    periodo_id = request.args.get('periodo_id', 1)
+
+    try:
+        ruta_archivo = _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id)
+        if not ruta_archivo or not os.path.exists(ruta_archivo):
+            return jsonify({'error': 'No se encontro ni se pudo generar el Excel físico'}), 404
+            
+        wb = openpyxl.load_workbook(ruta_archivo, data_only=True)
+        ws = wb.active
+        
+        data = []
+        for row in ws.iter_rows(min_row=2, max_col=3, values_only=True):
+            if row[0]: # Si hay ID de estudiante
+                data.append({
+                    'id_estudiante': row[0],
+                    'nombre': row[1],
+                    'nota': row[2] if row[2] is not None else ''
+                })
+                
+        return jsonify({'status': 'ok', 'alumnos': data}), 200
+        
+    except Exception as e:
+         return _error_interno(e)
+
+# ── NUEVA RUTA: GUARDAR DESDE PANTALLA WEB DIRECTO ─────────────────────────────
+@calificaciones_bp.route('/api/calificaciones/guardar_planilla_web', methods=['POST'])
+def api_guardar_planilla_web():
+    data_json = request.get_json()
+    grado_id = data_json.get('grado_id')
+    grupo_id = data_json.get('grupo_id')
+    materia_id = data_json.get('materia_id')
+    periodo_id = data_json.get('periodo_id', 1)
+    alumnos = data_json.get('alumnos', [])
+    
+    try:
+        # Encontramos el archivo físico
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT g.numero_grado, gr.codigo_grupo, m.nombre_materia FROM grados g, grupos gr, materias m WHERE g.id_grado=%s AND gr.id_grupo=%s AND m.id_materia=%s", (grado_id, grupo_id, materia_id))
+        info = cursor.fetchone()
+        
+        materia_limpia = str(info['nombre_materia']).replace(" ", "_").replace("/", "-")
+        nombre_carpeta_grado = f"Grado_{info['numero_grado']}"
+        nombre_carpeta_grupo = f"Grupo_{info['codigo_grupo']}"
+        nombre_archivo = f"{materia_limpia}_G{info['numero_grado']}_{info['codigo_grupo']}_P{periodo_id}.xlsx"
+        
+        ruta_archivo_actual = os.path.join(PLANILLAS_DIR, nombre_carpeta_grado, nombre_carpeta_grupo, nombre_archivo)
+        
+        if not os.path.exists(ruta_archivo_actual):
+             return jsonify({'error': 'El Excel fisico no existe para ser actualizado'}), 404
+
+        # Versionado (Archivador) - igual que al subir archivo manual
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nombre_historico = f"{nombre_archivo.replace('.xlsx', '')}_v{timestamp}.xlsx"
+        ruta_historial_dir = os.path.join(HISTORIAL_DIR, nombre_carpeta_grado, nombre_carpeta_grupo)
+        os.makedirs(ruta_historial_dir, exist_ok=True)
+        shutil.copy2(ruta_archivo_actual, os.path.join(ruta_historial_dir, nombre_historico))
+
+        # Modificamos el Excel Físico
+        wb = openpyxl.load_workbook(ruta_archivo_actual)
+        ws = wb.active
+        
+        # Mapeamos los alumos llegados desde la web a un diccionario
+        alumnos_map = {int(a['id_estudiante']): a['nota'] for a in alumnos}
+        
+        for fila_idx in range(2, ws.max_row + 1):
+            id_est = ws.cell(row=fila_idx, column=1).value
+            if id_est and int(id_est) in alumnos_map:
+                nota_nueva = alumnos_map[int(id_est)]
+                if str(nota_nueva).strip() == "":
+                    ws.cell(row=fila_idx, column=3).value = None
+                else:
+                    try: ws.cell(row=fila_idx, column=3).value = float(nota_nueva)
+                    except ValueError: pass
+        wb.save(ruta_archivo_actual)
+        
+        # Sincronizamos la DB
+        cursor.execute("SELECT id_actividad FROM actividades WHERE id_materia=%s AND id_periodo=%s AND id_grupo=%s LIMIT 1", (materia_id, periodo_id, grupo_id))
+        act_row = cursor.fetchone()
+        if not act_row:
+             cursor.execute("INSERT INTO actividades (nombre_actividad, id_materia, id_periodo, id_grupo) VALUES ('Carga desde Web', %s, %s, %s)", (materia_id, periodo_id, grupo_id))
+             conn.commit()
+             id_actividad = cursor.lastrowid
+        else:
+             id_actividad = act_row['id_actividad']
+             
+        for est_id, nota in alumnos_map.items():
+             if str(nota).strip() != "":
+                 cursor.execute("SELECT id_nota FROM notas WHERE id_estudiante=%s AND id_actividad=%s", (est_id, id_actividad))
+                 existing = cursor.fetchone()
+                 try:
+                     n_float = float(nota)
+                     if existing:
+                         cursor.execute("UPDATE notas SET puntaje_obtenido=%s WHERE id_nota=%s", (n_float, existing['id_nota']))
+                     else:
+                         cursor.execute("INSERT INTO notas (id_estudiante, id_actividad, puntaje_obtenido) VALUES (%s, %s, %s)", (est_id, id_actividad, n_float))
+                 except ValueError: pass
+                 
+        conn.commit()
+        cursor.close(); conn.close()
+        
+        return jsonify({'status': 'ok', 'message': 'Guardado en Excel físico y BD exitosamente'})
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return _error_interno(e)
 
 
