@@ -35,7 +35,6 @@
 # hasta el ultimo momento en el que existieron o hubo un ultimo cambio)), y que al descargarlo se descargue con ese nombre, y al subirlo se suba 
 # con ese nombre
 # que se guarde en la carpeta correspondiente, y que al descargarlo se descargue con ese nombre, y al subirlo se suba con ese nombre, 
-# esto con el fin de mantener un orden y facilitar la busqueda de las calificaciones.
 # claro, se creara es una carpeta del grado con el nombre del grado, y dentro de esa carpeta se creara un archivo excel con el nombre del grupo, 
 # esto con el fin de mantener un orden y facilitar la busqueda de las calificaciones.
 from typing import List
