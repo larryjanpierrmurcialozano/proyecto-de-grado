@@ -221,8 +221,7 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recr
 # ── 1. SINCRONIZADOR MASIVO (Desde la DB hacia el sistema local) ────────
 
 @calificaciones_bp.route('/api/calificaciones/sincronizar_carpetas', methods=['POST'])
-@role_required('admin_server')
-def api_sincronizar_carpetas(current_user):
+def api_sincronizar_carpetas():
     """
     Crea la estructura de carpetas para todos los grados y grupos que existan en el sistema.
     Luego genera los Excel únicamente para las materias asignadas.
@@ -256,17 +255,11 @@ def api_sincronizar_carpetas(current_user):
         
         archivos_creados = 0
         for asig in asignaciones:
-            res = _crear_excel_fisico(asig['id_grado'], asig['id_grupo'], asig['id_materia'])
+            # Fuerza recrearlo para que obtenga el nuevo formato de columnas si no lo tenía.
+            res = _crear_excel_fisico(asig['id_grado'], asig['id_grupo'], asig['id_materia'], force_recreate=True)
             if res:
                 archivos_creados += 1
                 
-        # Registrar la acción en el log (silencioso si falla)
-        try:
-            from utils.helpers import log_action
-            log_action(current_user.get('id_usuario'), 'sincronizar_carpetas', 'Sincronización masiva de planillas desde UI')
-        except Exception:
-            pass
-
         return jsonify({
             'status': 'ok',
             'message': f'Sincronización completa. Carpetas de grados/grupos verificadas. {carpetas_creadas} nuevas carpetas creadas.',
