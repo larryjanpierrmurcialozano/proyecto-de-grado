@@ -1,1 +1,1 @@
-hola larry, en caso de que lo olvides, puede que olvides ciertas cositas o cometas errores, tienes el control de git en control shift g, luego al 
+hola larry, en caso de que lo olvides, puede que olvides ciertas cositas o cometas errores, tienes el control de git en control shift g, luego en la parte
