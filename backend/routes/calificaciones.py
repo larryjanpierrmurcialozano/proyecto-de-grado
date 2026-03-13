@@ -38,7 +38,7 @@
 # esto con el fin de mantener un orden y facilitar la busqueda de las calificaciones.
 # claro, se creara es una carpeta del grado con el nombre del grado, y dentro de esa carpeta se creara un archivo excel con el nombre del grupo, 
 # esto con el fin de mantener un orden y facilitar la busqueda de las calificaciones.
-# todo esto se hara con la libreria openpyxl, y se guardara en una carpeta especifica para cada curso, dentro de una carpeta general de calificaciones
+# todo esto se hara con la libreria openpyxl, y se guardara en una
 from typing import List
 import mysql.connector
 from flask import Blueprint, jsonify, request, session
