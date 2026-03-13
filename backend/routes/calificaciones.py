@@ -47,6 +47,7 @@
 # entonces seria algo asi: 
 # /calificaciones/grado_#(# = numero de grado sea sexto septimo y asi)/grupo_# (siendo el # el grupo que sea tipo a, b, o c)/materia_#_calificaciones.xlsx
 
+
 from typing import List
 import mysql.connector
 from flask import Blueprint, jsonify, request, session
