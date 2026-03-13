@@ -178,7 +178,7 @@ const CalificacionesModule = {
             
             const data = await response.json();
             if (response.ok) {
-                 alert(\`Éxito! \${data.message}\\nNotas inyectadas en base de datos: \${data.notas_procesadas}\\n¿Hubo backup del viejo?: \${data.archivo_viejo_respaldado ? 'Si, en Archivador' : 'No había'}\`);
+                 alert(`Éxito! ${data.message}\nNotas inyectadas en base de datos: ${data.notas_procesadas}\n¿Hubo backup del viejo?: ${data.archivo_viejo_respaldado ? 'Si, en Archivador' : 'No había'}`);
                  fileInput.value = '';
                  document.getElementById('btn-subir').disabled = true;
             } else {
