@@ -396,17 +396,27 @@ def api_guardar_planilla_web():
         ws = wb.active
         
         # Mapeamos los alumos llegados desde la web a un diccionario
-        alumnos_map = {int(a['id_estudiante']): a['nota'] for a in alumnos}
+        alumnos_map = {int(a['id_estudiante']): a for a in alumnos}
         
         for fila_idx in range(2, ws.max_row + 1):
             id_est = ws.cell(row=fila_idx, column=1).value
             if id_est and int(id_est) in alumnos_map:
-                nota_nueva = alumnos_map[int(id_est)]
-                if str(nota_nueva).strip() == "":
-                    ws.cell(row=fila_idx, column=3).value = None
-                else:
-                    try: ws.cell(row=fila_idx, column=3).value = float(nota_nueva)
-                    except ValueError: pass
+                alumno_data = alumnos_map[int(id_est)]
+                
+                # Helper para convertir a float seguro
+                def set_float_val(col, key):
+                    val = str(alumno_data.get(key, '')).strip()
+                    if val == "": ws.cell(row=fila_idx, column=col).value = None
+                    else:
+                        try: ws.cell(row=fila_idx, column=col).value = float(val)
+                        except: pass
+                
+                set_float_val(3, 'act1')
+                set_float_val(4, 'act2')
+                set_float_val(5, 'act3')
+                set_float_val(6, 'act4')
+                set_float_val(7, 'nota')
+                
         wb.save(ruta_archivo_actual)
         
         # Sincronizamos la DB
