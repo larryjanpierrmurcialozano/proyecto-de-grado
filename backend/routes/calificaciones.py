@@ -6,6 +6,8 @@
 # ademas de que se podra usar en modo offline, y luego sincronizar con el servidor cuando se tenga conexion a internet.
 # todo se tratara de guardar en formato excel, usando libreria openpyxl, y se guardara en una carpeta especifica para cada curso, 
 # dentro de una carpeta general de calificaciones, esto con el fin de mantener un orden y facilitar la busqueda de las calificaciones. 
-#   
+#   todo se tendra una estructura de carpetas asi:
+#   calificaciones/
+
 from typing import List
 import mysql.connector
