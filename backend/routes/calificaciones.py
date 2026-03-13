@@ -44,7 +44,7 @@
 # con ese nombre
 # que se guarde en la carpeta correspondiente, y que al descargarlo se descargue con ese nombre, y al subirlo se suba con ese nombre, 
 # esto con el fin de mantener un orden y facilitar la busqueda de las calificaciones.
-# claro, se creara es una carpeta del grado
+# claro, se creara es una carpeta del grado 
 from typing import List
 import mysql.connector
 from flask import Blueprint, jsonify, request, session
