@@ -147,7 +147,7 @@ const CalificacionesModule = {
         const materia = document.getElementById('calif-materia').value;
         
         // Es un GET form normal para forzar descarga, enlazamos parametros por queryString
-        window.location.href = \`/api/calificaciones/generar_planilla?grado_id=\${grado}&grupo_id=\${grupo}&materia_id=\${materia}&periodo_id=1\`;
+        window.location.href = `/api/calificaciones/generar_planilla?grado_id=${grado}&grupo_id=${grupo}&materia_id=${materia}&periodo_id=1`;
     },
 
     async subirExcel() {
