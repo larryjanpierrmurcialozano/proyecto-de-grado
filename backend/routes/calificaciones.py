@@ -10,7 +10,7 @@
 #   calificaciones/
 #       grado 6/
 #           calificaciones.xlsx
-#       curso_2/
+#       grado 7/
 #           calificaciones.xlsx
 #       ...
 from typing import List
