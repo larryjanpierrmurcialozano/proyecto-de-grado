@@ -39,7 +39,7 @@
 # esto con el fin de mantener un orden y facilitar la busqueda de las calificaciones.
 # se puede mantener un control de archivos dentro del modulo grafico de calificaciones, no se muy bien como se deberia ver, pero tengo una idea,
 # podria recrear una especia de explorador de archivos dentro del modulo de calificaciones, donde se pueda ver la estructura de carpetas y archivos, 
-# y se pueda navegar
+# y se pueda navegar por ella y se pueda seleecionar 
 from typing import List
 import mysql.connector
 from flask import Blueprint, jsonify, request, session
