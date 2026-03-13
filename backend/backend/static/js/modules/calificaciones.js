@@ -70,7 +70,11 @@ const CalificacionesModule = {
                                 <tr>
                                     <th>ID</th>
                                     <th>Apellidos y Nombres</th>
-                                    <th>Nota Final (Excel)</th>
+                                    <th>Act 1</th>
+                                    <th>Act 2</th>
+                                    <th>Act 3</th>
+                                    <th>Act 4</th>
+                                    <th>Nota Final</th>
                                 </tr>
                             </thead>
                             <tbody id="excel-tbody">
