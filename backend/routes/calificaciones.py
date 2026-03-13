@@ -38,7 +38,7 @@
 # claro, se creara es una carpeta del grado con el nombre del grado, y dentro de esa carpeta se creara un archivo excel con el nombre del grupo, 
 # esto con el fin de mantener un orden y facilitar la busqueda de las calificaciones.
 # se puede mantener un control de archivos dentro del modulo grafico de calificaciones, no se muy bien como se deberia ver, pero tengo una idea,
-# podria recrear una especia de explor
+# podria recrear una especia de explorador de archivos dentro del modulo de calificaciones, donde se pueda ver 
 from typing import List
 import mysql.connector
 from flask import Blueprint, jsonify, request, session
