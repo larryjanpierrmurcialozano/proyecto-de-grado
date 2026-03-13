@@ -98,7 +98,7 @@ const CalificacionesModule = {
         select.innerHTML = '<option value="">Seleccione Grado...</option>';
         try {
             const res = await callApi('/api/grados');
-            res.grados.forEachg => {
+            res.grados.forEach g => {
                 select.innerHTML += \`<option value="\${g.id_grado}">\${g.numero_grado} - \${g.nombre_grado || ''}</option>\`;
             });
         } catch (e) { console.error(e); }
