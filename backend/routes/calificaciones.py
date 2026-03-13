@@ -60,4 +60,5 @@ if __name__ == '__main__':
         if 'cursor' in locals():
             cursor.close()
         if 'conn' in locals():
-            conn.close()
+            conn.close()    
+            
