@@ -1,5 +1,5 @@
 # Calificaciones    
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from 
 from typing import List
 import mysql.connector
