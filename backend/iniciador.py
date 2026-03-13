@@ -63,6 +63,7 @@ app.register_blueprint(estudiantes_bp)   # CRUD Estudiantes
 app.register_blueprint(docentes_bp)      # Docentes admin + Panel docente
 app.register_blueprint(academico_bp)     # Grados, Grupos, Materias, Asignaciones, Períodos
 app.register_blueprint(horarios_bp)      # CRUD Horarios + Niveles + Asignaciones-grupo
+app.register_blueprint(calificaciones_bp)# Módulo Offline First de Calificaciones por Excel
 app.register_blueprint(registros_bp)     # Asistencia + Observador
 app.register_blueprint(comunicados_bp)   # CRUD Comunicados
 app.register_blueprint(reportes_bp)      # Reportes + Logs + Envío de correo
