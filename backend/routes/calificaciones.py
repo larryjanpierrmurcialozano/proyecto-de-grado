@@ -58,3 +58,4 @@ if __name__ == '__main__':
     print("Este módulo es un blueprint y no se puede ejecutar directamente.")
      finally:
         if 'cursor' in locals():
+            cursor.close()
