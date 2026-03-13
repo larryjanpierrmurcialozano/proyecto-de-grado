@@ -583,11 +583,4 @@ def api_periodo_cambiar_estado(id):
         return jsonify({'status': 'ok'}), 200
     except Exception as e:
         return _error_interno(e)
-
-
-# ── Calificaciones ───────────────────────────────────────────────────────────
-
-@academico_bp.route('/api/calificaciones', methods=['GET'])
-def api_calificaciones():
-    """Endpoint de calificaciones — pendiente de implementación"""
-    return jsonify({'status': 'ok', 'message': 'Módulo de calificaciones en desarrollo', 'calificaciones': []}), 200
+    

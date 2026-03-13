@@ -1,3 +1,4 @@
+# indicaciones by larry.ai.chan.uwu.rmppnochas3000 :D 
 # Calificaciones sistema de gestion de calificaciones, CRUD de calificaciones, listado de calificaciones por curso, etc. 
 # ═══════════════════════════════════════════════════════════════════════════════
 # BLUEPRINT: CALIFICACIONES — CRUD de calificaciones, listado de calificaciones por curso
@@ -46,11 +47,67 @@
 # en escala de grados y grupos como esta ya diseñado, la idea es que cada grupo con una materia asiganada tenga un archivo de calificaciones,
 # claro, seria una estructura mucho mas compleja, puesto que cada grado deberia tener su planilla de cada materia que tiene asignada, 
 # entonces seria algo asi: 
-# /calificaciones/grado_#(# = numero de grado sea sexto septimo y asi)/grupo_# (siendo el # el grupo que sea tipo a, b, o c)/materia_#_calificaciones.xlsx
+# /calificaciones/grado_#(# = numero de grado sea sexto septimo y asi)/grupo_# (siendo el # el grupo que sea tipo a, b, o c)/materias_#/materia_#_#_calificaciones.xlsx
+# regulacion, lee la base de datos para entender estructura completa, te especifico las tablas que usaras para construir estas indicaciones
 
-from typing import List
+# ═══════════════════════════════════════════════════════════════════════════════
+# BLUEPRINT: CALIFICACIONES — Sistema Híbrido (Archivos Locales + Sincronización DB)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# CONCEPTO ARQUITECTÓNICO DEL MÓDULO: "Tolerancia a fallos y Trabajo Offline"
+# --------------------------------------------------------------------------------
+# Este módulo se basa en un enfoque híbrido, combinando la flexibilidad de uso de 
+# archivos Excel (carpetas locales) con la rapidez y seguridad de una Base de Datos (MySQL).
+#
+# 1. ALMACENAMIENTO FÍSICO JERÁRQUICO (El corazón local/offline):
+#    - El sistema será el encargado ÚNICO de CREAR los archivos Excel.
+#    - Mantiene una estructura de carpetas física y persistente: EJEMPLO:
+#      /planillas_locales/Grado_7/Grupo_A/materia_Matematicas_G7_A.xlsx
+#    - Esto asegura que la App/Web pueda funcionar incluso si no hay conexión 
+#      momentánea a la base de datos principal, manteniendo los Excel en su directorio.
+#
+# 2. SISTEMA DE RESPALDO Y VERSIONADO ("El Archivador Histórico"):
+#    - NUNCA se sobreescribe destructivamente un Excel modificado. 
+#    - Al subir un Excel con nuevas calificaciones, la versión anterior se mueve a 
+#      una subcarpeta /historial_respaldos/ con marca de tiempo (ej. ..._v20260313.xlsx).
+#    - Estos archivos se guardan permanentemente y SOLO se borran por mantenimiento 
+#      directo de sistema o DB (nunca desde la interfaz normal del usuario).
+#
+# 3. SINCRONIZACIÓN AUTOMÁTICA HACIA LA BASE DE DATOS:
+#    - Cuando hay internet/conexión a la base de datos, el sistema lee el archivo 
+#      Excel ingresado/modificado y "sincroniza" esos datos, rellenando las tablas:
+#      `notas`, `estudiantes`, `actividades`, etc.
+#    - La base de datos mantiene lectura constante de estos envíos. Generar los Excel
+#      siempre se hace en base a la info maestra.
+#
+# 4. EXCEL CONTROLADOS:
+#    - Los archivos generados por el sistema bloquearán las zonas de nombres/id, 
+#      permitiendo al docente llenar solo las notas.
+#    - Los IDs de estudiantes / notas, en lugar de estar ocultos en el Excel, serán
+#      manejables o visibles de forma opcional DENTRO de la interfaz web/app del 
+#      sistema, no estorbando en el propio archivo físico .xlsx esto con el fin de 
+#      que al desear imprimir o descargar el archivo, se tenga un formato limpio y 
+#      profesional, pero a su vez, al subirlo, el sistema pueda reconocer los datos y 
+#      sincronizarlos con la base de datos sin problemas.
+#
+# RUTAS CORE A IMPLEMENTAR:
+# - GET/POST `/api/calificaciones/estructura_carpetas`: Explora y crea la jerarquía.
+# - GET `/api/calificaciones/generar_planilla`: Crea el Excel bloqueado físicamente.
+# - POST `/api/calificaciones/subir_planilla`: Recibe Excel, versiona el anterior, guarda y sincroniza DB.
+#
+# LIBRERÍAS CLAVE: os (rutas), shutil (movimiento de historiales), openpyxl (creación/lectura de Excel).
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+from flask import Blueprint, jsonify, request, send_file
 import mysql.connector
-from flask import Blueprint, jsonify, request, session
+import os
+import shutil
+# import openpyxl # (Descomentar e instalar cuando codifiquemos los endpoints)
 from utils.database import get_db
 from utils.helpers import _error_interno
+
 calificaciones_bp = Blueprint('calificaciones', __name__)
+
+# ---> Aquí empezaremos a implementar las rutas correspondientes basadas en la documentación superior.
+
