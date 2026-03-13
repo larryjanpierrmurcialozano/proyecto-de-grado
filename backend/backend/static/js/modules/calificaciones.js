@@ -118,9 +118,9 @@ const CalificacionesModule = {
         if(!gradoId) return;
 
         try {
-            const res = await callApi(\`/api/grados/\${gradoId}/grupos\`);
+            const res = await callApi(`/api/grados/${gradoId}/grupos`);
             res.grupos.forEach(g => {
-                selectGrupo.innerHTML += \`<option value="\${g.id_grupo}">\${g.codigo_grupo}</option>\`;
+                selectGrupo.innerHTML += `<option value="${g.id_grupo}">${g.codigo_grupo}</option>`;
             });
             selectGrupo.disabled = false;
         } catch(e) { console.error(e); }
