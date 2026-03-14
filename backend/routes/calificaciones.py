@@ -364,6 +364,20 @@ def api_estructura_carpetas():
         return _error_interno(e)
 
 
+@calificaciones_bp.route('/api/calificaciones/estructura_carpetas/public', methods=['GET'])
+def api_estructura_carpetas_public():
+    """Endpoint público de diagnóstico: lista la estructura de `PLANILLAS_DIR` sin requerir sesión.
+    Atención: dejar temporalmente solo para depuración local; no recomendable en producción.
+    """
+    try:
+        if not os.path.exists(PLANILLAS_DIR):
+            return jsonify({'status': 'ok', 'tree': [], 'message': 'No existe la carpeta de planillas en este equipo.'}), 200
+        tree = _build_planillas_tree(PLANILLAS_DIR, max_depth=4)
+        return jsonify({'status': 'ok', 'tree': tree, 'base': PLANILLAS_DIR}), 200
+    except Exception as e:
+        return _error_interno(e)
+
+
 # ── 1. SINCRONIZADOR MASIVO (Desde la DB hacia el sistema local) ────────
 
 @calificaciones_bp.route('/api/calificaciones/sincronizar_carpetas', methods=['POST'])
