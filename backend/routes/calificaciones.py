@@ -1,4 +1,7 @@
+# 
+# 
 # indicaciones by larry.ai.chan.uwu.rmppnochas3000 :D 
+# el id de periodo es el que permite modificar el archivo excel, si el id de periodo esta desactivado desde el futuro modulo de periodos, el cual la idea es que cierre el permiso de modificaciones, el cual en algun futuro se añadira
 # en calificaciones se requiere que los excel se rellenen con los nombre de los estudiantes y los partes de las notas las cuales deben ser modificables dentro de la app
 # Calificaciones sistema de gestion de calificaciones, CRUD de calificaciones, listado de calificaciones por curso, etc. 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -144,6 +147,17 @@ HISTORIAL_DIR = os.path.join(ESCRITORIO, 'Planillas_DocstrY_Historial')
 # Garantizar que el Archivador Histórico y la Carpeta Local existan al iniciar
 os.makedirs(PLANILLAS_DIR, exist_ok=True)
 os.makedirs(HISTORIAL_DIR, exist_ok=True)
+
+# ======= INVENTARIO RÁPIDO (generado por el agente) =======
+# Contenido relevante en el workspace `backend`:
+# - Archivos/dirs raíz dentro de `backend`: .env, iniciador.py, instalador_imports.py,
+#   CONFIG_CORREOS.md, requirements.txt, requirements_limpio.txt, planillas_locales/, historial_respaldos/, scripts/, utils/, routes/, backend/ (estáticos y templates).
+# - `backend/backend/static/` contiene activos JS/CSS y `backend/backend/static/js/modules/calificaciones.js`.
+# - `backend/routes/` contiene endpoints incluyendo `calificaciones.py` (este archivo), `estudiantes.py`, `docentes.py`, `grados.py` (si aplica), etc.
+# - `backend/utils/` contiene `database.py` (pool), `helpers.py` (decoradores y utilidades), `constants.py`.
+# Propósito: este inventario documenta qué hay en el proyecto y ayuda a reproducir opciones (UI/API)
+# ======================================================
+
 
 
 def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recreate=False):
