@@ -148,6 +148,25 @@ HISTORIAL_DIR = os.path.join(ESCRITORIO, 'Planillas_DocstrY_Historial')
 os.makedirs(PLANILLAS_DIR, exist_ok=True)
 os.makedirs(HISTORIAL_DIR, exist_ok=True)
 
+
+def _build_planillas_tree(root_path, max_depth=4):
+    """Construye un árbol simple (lista) de carpetas y archivos bajo root_path."""
+    root_path = os.path.abspath(root_path)
+    tree = []
+    for dirpath, dirnames, filenames in os.walk(root_path):
+        rel = os.path.relpath(dirpath, root_path)
+        depth = 0 if rel == '.' else rel.count(os.sep) + 1
+        if depth > max_depth:
+            dirnames[:] = []
+            continue
+        entry = {
+            'path': rel if rel != '.' else '',
+            'dirs': dirnames.copy(),
+            'files': filenames.copy()
+        }
+        tree.append(entry)
+    return tree
+
 # ======= INVENTARIO RÁPIDO (generado por el agente) =======
 # Contenido relevante en el workspace `backend`:
 # - Archivos/dirs raíz dentro de `backend`: .env, iniciador.py, instalador_imports.py,
