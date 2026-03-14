@@ -332,6 +332,37 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recr
     return ruta_archivo
 
 
+# Ruta de utilidad: devolver estructura de carpetas y archivos bajo PLANILLAS_DIR
+@calificaciones_bp.route('/api/calificaciones/estructura_carpetas', methods=['GET'])
+def api_estructura_carpetas():
+    try:
+        def build_tree(root_path, max_depth=3):
+            tree = []
+            root_path = os.path.abspath(root_path)
+            for dirpath, dirnames, filenames in os.walk(root_path):
+                rel = os.path.relpath(dirpath, root_path)
+                depth = 0 if rel == '.' else rel.count(os.sep) + 1
+                if depth > max_depth:
+                    # evitar profundizar demasiado: eliminar subdirs
+                    dirnames[:] = []
+                    continue
+                entry = {
+                    'path': rel if rel != '.' else '',
+                    'dirs': dirnames.copy(),
+                    'files': filenames.copy()
+                }
+                tree.append(entry)
+            return tree
+
+        if not os.path.exists(PLANILLAS_DIR):
+            return jsonify({'status': 'ok', 'tree': [], 'message': 'No existe la carpeta de planillas en este equipo.'}), 200
+
+        tree = build_tree(PLANILLAS_DIR, max_depth=4)
+        return jsonify({'status': 'ok', 'tree': tree, 'base': PLANILLAS_DIR}), 200
+    except Exception as e:
+        return _error_interno(e)
+
+
 # ── 1. SINCRONIZADOR MASIVO (Desde la DB hacia el sistema local) ────────
 
 @calificaciones_bp.route('/api/calificaciones/sincronizar_carpetas', methods=['POST'])
