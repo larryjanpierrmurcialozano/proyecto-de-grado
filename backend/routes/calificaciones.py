@@ -184,9 +184,10 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recr
     except Exception as e:
         print('[calificaciones] Error consultando metadata:', e)
 
-    # 2. Estudiantes (si el grupo existe, intentar obtener estudiantes; si no, lista vacía)
+    # 2. Estudiantes: intentar varias estrategias para obtener el listado
     estudiantes = []
     try:
+        # Intento 1: por grupo (lo habitual)
         cursor.execute("""
             SELECT id_estudiante, nombre, apellido, documento_identidad
             FROM estudiantes
@@ -194,6 +195,38 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recr
             ORDER BY apellido, nombre
         """, (grupo_id,))
         estudiantes = cursor.fetchall() or []
+
+        # Intento 2: si no hay estudiantes por grupo, intentar por grado (algunos datos usan id_grado en vez de id_grupo)
+        if not estudiantes and grado_id:
+            try:
+                cursor.execute("""
+                    SELECT id_estudiante, nombre, apellido, documento_identidad
+                    FROM estudiantes
+                    WHERE id_grado = %s AND estado = 'Activo'
+                    ORDER BY apellido, nombre
+                """, (grado_id,))
+                estudiantes = cursor.fetchall() or []
+                if estudiantes:
+                    print(f"[calificaciones] Fallback: se encontraron {len(estudiantes)} estudiantes por grado id={grado_id}")
+            except Exception as e2:
+                print('[calificaciones] Error fallback por grado:', e2)
+
+        # Intento 3: si sigue vacío, traer todos los estudiantes activos (último recurso)
+        if not estudiantes:
+            try:
+                cursor.execute("""
+                    SELECT id_estudiante, nombre, apellido, documento_identidad
+                    FROM estudiantes
+                    WHERE estado = 'Activo'
+                    ORDER BY apellido, nombre
+                    LIMIT 500
+                """)
+                estudiantes = cursor.fetchall() or []
+                if estudiantes:
+                    print(f"[calificaciones] Fallback amplio: se encontraron {len(estudiantes)} estudiantes (limite 500).")
+            except Exception as e3:
+                print('[calificaciones] Error fallback amplio estudiantes:', e3)
+
     except Exception as e:
         print('[calificaciones] Error consultando estudiantes:', e)
 
