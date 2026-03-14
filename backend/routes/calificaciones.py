@@ -223,7 +223,7 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recr
     try:
         # Intento 1: por grupo (lo habitual)
         cursor.execute("""
-            SELECT id_estudiante, nombre, apellido, documento_identidad
+            SELECT id_estudiante, nombre, apellido, documento
             FROM estudiantes
             WHERE id_grupo = %s AND estado = 'Activo'
             ORDER BY apellido, nombre
@@ -234,7 +234,7 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recr
         if not estudiantes and grado_id:
             try:
                 cursor.execute("""
-                    SELECT id_estudiante, nombre, apellido, documento_identidad
+                    SELECT id_estudiante, nombre, apellido, documento
                     FROM estudiantes
                     WHERE id_grado = %s AND estado = 'Activo'
                     ORDER BY apellido, nombre
@@ -249,7 +249,7 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recr
         if not estudiantes:
             try:
                 cursor.execute("""
-                    SELECT id_estudiante, nombre, apellido, documento_identidad
+                    SELECT id_estudiante, nombre, apellido, documento
                     FROM estudiantes
                     WHERE estado = 'Activo'
                     ORDER BY apellido, nombre
