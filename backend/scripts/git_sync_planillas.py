@@ -67,7 +67,9 @@ def copy_planillas_to_repo(repo_dir, target_subdir='planillas'):
 
 
 def main():
-    remote = os.environ.get('GIT_REMOTE')
+    # Remote por defecto provisto por el usuario (puedes sobreescribir con GIT_REMOTE)
+    default_remote = 'https://github.com/larryjanpierrmurcialozano/proyecto-de-grado.git'
+    remote = os.environ.get('GIT_REMOTE', default_remote)
     repo_dir = os.environ.get('GIT_REPO_DIR', os.path.join(ROOT, 'planillas_repo'))
     branch = os.environ.get('GIT_BRANCH', 'planillas')
     user_name = os.environ.get('GIT_USER_NAME')
