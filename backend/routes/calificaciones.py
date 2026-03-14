@@ -1,4 +1,5 @@
 # indicaciones by larry.ai.chan.uwu.rmppnochas3000 :D 
+# en calificaciones se requiere que los excel se rellenen con los nombre de los estudiantes y los partes de las notas las cuales deben ser modificables dentro de la app
 # Calificaciones sistema de gestion de calificaciones, CRUD de calificaciones, listado de calificaciones por curso, etc. 
 # ═══════════════════════════════════════════════════════════════════════════════
 # BLUEPRINT: CALIFICACIONES — CRUD de calificaciones, listado de calificaciones por curso
@@ -269,18 +270,45 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recr
         celda.font = header_font
         celda.protection = bloqueado
     
-    for row_num, est in enumerate(estudiantes, start=2):
-        celda_id = ws.cell(row=row_num, column=1, value=est['id_estudiante'])
-        celda_id.protection = bloqueado
-        
-        nombre_completo = f"{est['apellido']} {est['nombre']}"
-        celda_noms = ws.cell(row=row_num, column=2, value=nombre_completo)
-        celda_noms.protection = bloqueado
+    # Log: cantidad de estudiantes que se volcarán
+    try:
+        print(f"[calificaciones] Volcando {len(estudiantes)} estudiantes en el Excel (grado={grado_id} grupo={grupo_id} materia={materia_id})")
+        if estudiantes:
+            sample = estudiantes[:5]
+            print('[calificaciones] Primeros registros:', sample)
+    except Exception:
+        pass
 
-        # Celdas Notas
+    for row_num, est in enumerate(estudiantes, start=2):
+        # detectar id de forma robusta
+        est_id = None
+        if isinstance(est, dict):
+            for key in ('id_estudiante', 'id', 'id_alumno', 'estudiante_id'):
+                if key in est and est.get(key) is not None:
+                    est_id = est.get(key); break
+        try:
+            ws.cell(row=row_num, column=1, value=est_id)
+        except Exception:
+            ws.cell(row=row_num, column=1, value=None)
+
+        # componer nombre de forma robusta
+        nombre_val = None
+        if isinstance(est, dict):
+            if est.get('apellido') and est.get('nombre'):
+                nombre_val = f"{est.get('apellido')} {est.get('nombre')}"
+            elif est.get('nombre_completo'):
+                nombre_val = est.get('nombre_completo')
+            elif est.get('nombre'):
+                nombre_val = est.get('nombre')
+            else:
+                for key in ('full_name','nombre_estudiante'):
+                    if key in est:
+                        nombre_val = est.get(key); break
+        ws.cell(row=row_num, column=2, value=nombre_val)
+
+        # Celdas Notas: dejar vacías (editable)
         for c_idx in range(3, 8):  # Columnas 3 a 7 (Act 1,2,3,4 y Nota Final)
-            celda_nota = ws.cell(row=row_num, column=c_idx)
-            celda_nota.protection = desbloqueado
+            ws.cell(row=row_num, column=c_idx, value=None)
             
     ws.column_dimensions['A'].hidden = True
     ws.column_dimensions['B'].width = 35
