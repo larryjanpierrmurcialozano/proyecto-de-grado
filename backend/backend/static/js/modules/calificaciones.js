@@ -157,7 +157,13 @@ const CalificacionesModule = {
                 throw new Error(data.error || ('HTTP ' + resp.status));
             }
 
-            alert(`${data.message}\nArchivos nuevos generados/verificados: ${data.archivos_en_sistema || 'N/A'}`);
+            const created = data.created_files || [];
+            const errors = data.errors || [];
+            let resumen = `${data.message}\nCreados: ${created.length}\nErrores: ${errors.length}`;
+            if (data.archivos_en_sistema) resumen += `\nArchivos en sistema: ${data.archivos_en_sistema}`;
+            alert(resumen);
+            if (created.length) console.log('Archivos creados/verificados:', created);
+            if (errors.length) console.error('Errores al crear archivos:', errors);
         } catch (e) {
             console.error(e);
             alert('Error sincronizando: ' + (e.message || e));

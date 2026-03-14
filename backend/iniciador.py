@@ -10,7 +10,8 @@ from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 import os, logging, sys
 from dotenv import load_dotenv
-
+import openpyxl
+from openpyxl import *
 # Utilidades compartidas
 from utils.database import db_config, cleanup_db_connections
 from utils.constants import RUTAS_PUBLICAS

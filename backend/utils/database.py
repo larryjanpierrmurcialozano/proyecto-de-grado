@@ -14,7 +14,7 @@ db_config = {
     'host': os.getenv('DB_HOST', 'localhost'),
     'port': int(os.getenv('DB_PORT', 3306)),
     'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', ''),
+    'password': os.getenv('DB_PASSWORD', '3202964025larry.'),
     'database': os.getenv('DB_NAME', 'anexo_de_datos')
 }
 

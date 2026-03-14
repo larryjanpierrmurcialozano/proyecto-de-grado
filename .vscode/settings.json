@@ -1,3 +1,5 @@
 {
-    "liveshare.alwaysFollowHost": false
+    "liveshare.alwaysFollowHost": false,
+    "commentTranslate.hover.enabled": false,
+    "github.copilot.nextEditSuggestions.enabled": true
 }

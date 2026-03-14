@@ -95,19 +95,27 @@
 # - GET `/api/calificaciones/generar_planilla`: Crea el Excel bloqueado físicamente.
 # - POST `/api/calificaciones/subir_planilla`: Recibe Excel, versiona el anterior, guarda y sincroniza DB.
 #
-# LIBRERÍAS CLAVE: os (rutas), shutil (movimiento de historiales), openpyxl (creación/lectura de Excel).
+# LIBRERÍAS CLAVE: os (rutas), shutil (movimiento de historiales), openpyxl (creación/lectura de Excel).ahora quiero que ya funcionando la creacion de excel, sirva la sincronizacion del escritorio con el "server", osea que si se crean archivos o excel en el escritorio principal, se carguen en el server ahi te mostre donde tengo los archivos dentro del "server" para que se sincronice los archivos del escritorio y se suban a donde corresponden automaticamente, evitando lo de tener que crear el get de cada excel, tipo la idea es que los que crean la planilla son la coordinadora y roles superiores, el rol de profesores no lo vera pero no nos preocupemos por eso de momento, por ahora concentremonos en hacer funcionar lo que hay
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+import sys
+import os
+
+# Si el archivo se ejecuta directamente (p. ej. `python backend/routes/calificaciones.py`),
+# asegurar que la carpeta `backend` esté en sys.path para poder importar `utils`.
+_here = os.path.dirname(os.path.abspath(__file__))  # .../backend/routes
+_backend_root = os.path.dirname(_here)               # .../backend
+if _backend_root not in sys.path:
+    sys.path.insert(0, _backend_root)
+
 from flask import Blueprint, jsonify, request, send_file
 import mysql.connector
-import os
 import shutil
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Protection
 from openpyxl.worksheet.protection import SheetProtection
 from datetime import datetime
-
 from utils.database import get_db
 from utils.helpers import _error_interno
 
@@ -141,28 +149,54 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recr
     """Función interna para crear un archivo Excel si no existe o se requiere forzar"""
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
-    
     # 1. Obtener la info del Grado, Grupo y Materia para el nombre del archivo
-    cursor.execute("""
-        SELECT g.numero_grado, gr.codigo_grupo, m.nombre_materia, m.codigo_materia
-        FROM grados g, grupos gr, materias m
-        WHERE g.id_grado = %s AND gr.id_grupo = %s AND m.id_materia = %s
-    """, (grado_id, grupo_id, materia_id))
-    info = cursor.fetchone()
-    
-    if not info:
-        cursor.close(); conn.close()
-        return None
+    info = {}
+    try:
+        cursor.execute("SELECT id_grado, numero_grado FROM grados WHERE id_grado = %s", (grado_id,))
+        g = cursor.fetchone()
+        if g:
+            info['id_grado'] = g.get('id_grado')
+            info['numero_grado'] = g.get('numero_grado')
+        else:
+            print(f"[calificaciones] Aviso: grado id={grado_id} no encontrado en DB")
 
-    # 2. Estudiantes
-    cursor.execute("""
-        SELECT id_estudiante, nombre, apellido, documento_identidad
-        FROM estudiantes
-        WHERE id_grupo = %s AND estado = 'Activo'
-        ORDER BY apellido, nombre
-    """, (grupo_id,))
-    estudiantes = cursor.fetchall()
-    
+        cursor.execute("SELECT id_grupo, codigo_grupo, id_grado FROM grupos WHERE id_grupo = %s", (grupo_id,))
+        gr = cursor.fetchone()
+        if gr:
+            info['id_grupo'] = gr.get('id_grupo')
+            info['codigo_grupo'] = gr.get('codigo_grupo')
+            if 'numero_grado' not in info and gr.get('id_grado'):
+                cursor.execute("SELECT numero_grado FROM grados WHERE id_grado=%s", (gr.get('id_grado'),))
+                gg = cursor.fetchone()
+                if gg:
+                    info['numero_grado'] = gg.get('numero_grado')
+        else:
+            print(f"[calificaciones] Aviso: grupo id={grupo_id} no encontrado en DB")
+
+        cursor.execute("SELECT id_materia, nombre_materia, codigo_materia FROM materias WHERE id_materia = %s", (materia_id,))
+        m = cursor.fetchone()
+        if m:
+            info['id_materia'] = m.get('id_materia')
+            info['nombre_materia'] = m.get('nombre_materia')
+            info['codigo_materia'] = m.get('codigo_materia')
+        else:
+            print(f"[calificaciones] Aviso: materia id={materia_id} no encontrada en DB")
+    except Exception as e:
+        print('[calificaciones] Error consultando metadata:', e)
+
+    # 2. Estudiantes (si el grupo existe, intentar obtener estudiantes; si no, lista vacía)
+    estudiantes = []
+    try:
+        cursor.execute("""
+            SELECT id_estudiante, nombre, apellido, documento_identidad
+            FROM estudiantes
+            WHERE id_grupo = %s AND estado = 'Activo'
+            ORDER BY apellido, nombre
+        """, (grupo_id,))
+        estudiantes = cursor.fetchall() or []
+    except Exception as e:
+        print('[calificaciones] Error consultando estudiantes:', e)
+
     cursor.close(); conn.close()
 
     # 3. Preparar la ruta
@@ -171,8 +205,13 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recr
     ruta_directorio = os.path.join(PLANILLAS_DIR, nombre_carpeta_grado, nombre_carpeta_grupo)
     os.makedirs(ruta_directorio, exist_ok=True) 
     
-    materia_limpia = str(info['nombre_materia']).replace(" ", "_").replace("/", "-")
-    nombre_archivo = f"{materia_limpia}_G{info['numero_grado']}_{info['codigo_grupo']}_P{periodo_id}.xlsx"
+    # Preparar nombres usando placeholders cuando falten datos
+    numero_grado = str(info.get('numero_grado') or f"Gr{grado_id}")
+    codigo_grupo = str(info.get('codigo_grupo') or f"G{grupo_id}")
+    nombre_materia = str(info.get('nombre_materia') or f"Materia_{materia_id}")
+
+    materia_limpia = nombre_materia.replace(" ", "_").replace("/", "-")
+    nombre_archivo = f"{materia_limpia}_G{numero_grado}_{codigo_grupo}_P{periodo_id}.xlsx"
     ruta_archivo = os.path.join(ruta_directorio, nombre_archivo)
 
     # 4. Creación del Excel si NO existe (o si se fuerza reescritura)
@@ -212,7 +251,7 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recr
             
     ws.column_dimensions['A'].hidden = True
     ws.column_dimensions['B'].width = 35
-    ws.protection.sheet = True
+
 
     wb.save(ruta_archivo)
     return ruta_archivo
@@ -251,19 +290,62 @@ def api_sincronizar_carpetas():
             FROM asignaciones_docente WHERE estado = 'Activa'
         """)
         asignaciones = cursor.fetchall()
-        cursor.close(); conn.close()
-        
+
         archivos_creados = 0
-        for asig in asignaciones:
-            # Fuerza recrearlo para que obtenga el nuevo formato de columnas si no lo tenía.
-            res = _crear_excel_fisico(asig['id_grado'], asig['id_grupo'], asig['id_materia'], force_recreate=True)
-            if res:
-                archivos_creados += 1
+        created_files = []
+        errors = []
+
+        if not asignaciones:
+            # Si no hay asignaciones activas, crear exceles para todas las combinaciones
+            # de grupos y materias (modo "crear todo" para instalaciones nuevas).
+            cursor.execute("""
+                SELECT g.id_grado, gr.id_grupo, g.numero_grado, gr.codigo_grupo
+                FROM grupos gr
+                JOIN grados g ON gr.id_grado = g.id_grado
+            """)
+            grupos = cursor.fetchall()
+
+            cursor.execute("SELECT id_materia FROM materias")
+            materias_rows = cursor.fetchall()
+            materias = [m['id_materia'] for m in materias_rows]
+
+            for grupo in grupos:
+                for m_id in materias:
+                    try:
+                        res = _crear_excel_fisico(grupo['id_grado'], grupo['id_grupo'], m_id, force_recreate=True)
+                        if res:
+                            archivos_creados += 1
+                            created_files.append(res)
+                    except Exception as ex:
+                        errors.append({
+                            'grado': grupo.get('id_grado'),
+                            'grupo': grupo.get('id_grupo'),
+                            'materia': m_id,
+                            'error': str(ex)
+                        })
+        else:
+            for asig in asignaciones:
+                try:
+                    res = _crear_excel_fisico(asig['id_grado'], asig['id_grupo'], asig['id_materia'], force_recreate=True)
+                    if res:
+                        archivos_creados += 1
+                        created_files.append(res)
+                except Exception as ex:
+                    errors.append({
+                        'grado': asig.get('id_grado'),
+                        'grupo': asig.get('id_grupo'),
+                        'materia': asig.get('id_materia'),
+                        'error': str(ex)
+                    })
+
+        cursor.close(); conn.close()
                 
         return jsonify({
             'status': 'ok',
             'message': f'Sincronización completa. Carpetas de grados/grupos verificadas. {carpetas_creadas} nuevas carpetas creadas.',
-            'archivos_en_sistema': archivos_creados
+            'archivos_en_sistema': archivos_creados,
+            'created_files': created_files,
+            'errors': errors
         }), 200
 
     except Exception as e:
