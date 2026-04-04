@@ -60,9 +60,9 @@ class MisClasesModule {
    * Renderizar la interfaz completa
    */
   renderUI() {
-    const container = document.getElementById('module-content');
+    const container = document.getElementById('main-content');
     if (!container) {
-      console.error('[MisClases] No encontré #module-content');
+      console.error('[MisClases] No encontré #main-content');
       return;
     }
 

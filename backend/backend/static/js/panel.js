@@ -331,7 +331,7 @@ function cargarPagina(pagina) {
         case 'asistencia':      if (typeof renderAsistencia === 'function') { renderAsistencia(); } else { renderPlaceholder('Control de Asistencia (Cargando...)', 'fa-clipboard-check'); } break;
         case 'observador':      if (typeof renderObservador === 'function') { renderObservador(); } else { renderPlaceholder('Observador del Estudiante (Cargando...)', 'fa-eye'); } break;
         case 'logs':            renderPlaceholder('Logs del Sistema', 'fa-history'); break;
-        case 'mis-clases':      renderPlaceholder('Mis Clases', 'fa-chalkboard'); break;
+        case 'mis-clases':      if (window.MisClasesModule) { new window.MisClasesModule().init(); } else { renderPlaceholder('Mis Clases (Cargando...)', 'fa-chalkboard'); } break;
         case 'mis-materias':    renderPlaceholder('Mis Materias', 'fa-book-open'); break;
         case 'mi-horario':      renderMiHorario(); break;
         default:
