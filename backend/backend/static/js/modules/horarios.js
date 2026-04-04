@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// DOCSTRY - MÓDULO HORARIOS
+// MÓDULO HORARIOS
 // Gestión de horarios: grilla semanal editable con filtros por grado/grupo/docente
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -91,47 +91,12 @@ async function renderHorarios() {
             `<option value="${d.id_usuario}" ${d.id_usuario == HORARIO_FILTROS.docente_id ? 'selected' : ''}>${d.apellido} ${d.nombre}</option>`
         ).join('');
 
-        content.innerHTML = `
-            <div class="card">
-                <div class="card-header-flex">
-                    <h2 class="card-title" style="border:none;margin:0;padding:0;">
-                        <i class="fas fa-clock"></i> Gestión de Horarios
-                    </h2>
-                </div>
+        const htmlRes = await fetch('/templates/modules html/horarios.html');
+        if (!htmlRes.ok) throw new Error('Error cargando la vista de horarios');
+        content.innerHTML = await htmlRes.text();
 
-                <!-- Filtros -->
-                <div class="horario-filtros" style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
-                    <div class="form-group" style="flex:1;min-width:160px;">
-                        <label><i class="fas fa-layer-group"></i> Grado</label>
-                        <select id="filtro-horario-grado" onchange="onFiltroGradoChange()">
-                            <option value="">— Seleccionar grado —</option>
-                            ${opGrados}
-                        </select>
-                    </div>
-                    <div class="form-group" style="flex:1;min-width:160px;">
-                        <label><i class="fas fa-users"></i> Grupo</label>
-                        <select id="filtro-horario-grupo" onchange="onFiltroGrupoChange()" disabled>
-                            <option value="">— Primero selecciona grado —</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="flex:1;min-width:200px;">
-                        <label><i class="fas fa-chalkboard-teacher"></i> Docente</label>
-                        <select id="filtro-horario-docente" onchange="onFiltroDocenteChange()">
-                            <option value="">— Todos los docentes —</option>
-                            ${opDocentes}
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Contenedor de la grilla -->
-                <div id="horario-grilla-container">
-                    <div style="text-align:center;padding:3rem;color:var(--cafe-claro);">
-                        <i class="fas fa-calendar-alt" style="font-size:3rem;margin-bottom:1rem;display:block;opacity:.4;"></i>
-                        <p>Selecciona un <strong>grado</strong> y un <strong>grupo</strong> para ver y editar su horario.</p>
-                    </div>
-                </div>
-            </div>
-        `;
+        document.getElementById('filtro-horario-grado').innerHTML += opGrados;
+        document.getElementById('filtro-horario-docente').innerHTML += opDocentes;
 
         // Si ya había filtros seleccionados, recargar
         if (HORARIO_FILTROS.grado_id) {

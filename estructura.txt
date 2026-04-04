@@ -1,17 +1,35 @@
-backend/
-├── iniciador.py
-├── iniciador_backup.py
-├── utils/
-│   ├── database.py        Pool de conexiones
-│   ├── constants.py       Constantes globales
-│   └── helpers.py         hash, log, decoradores
-├── routes/ 
-│   ├── auth.py           
-│   ├── usuarios.py         rutas CRUD usuarios
-│   ├── estudiantes.py     rutas CRUD estudiantes
-│   ├── docentes.py        rutas docentes
-│   ├── academico.py      rutas grados, materias, periodos
-│   ├── registros.py     rutas asistencia, observador
-│   ├── comunicados.py     rutas comunicados
-│   └── reportes.py        rutas y correo SMTP
-└── backend/        Templates, static, uploads
+proyecto de grado/
+├── .venv/                       Entorno virtual principal (unico)
+├── backend/
+│   ├── .env                     Configuracion del backend (unica)
+│   ├── iniciador.py             Punto de entrada Flask
+│   ├── inicializar_periodos.py  Script de inicializacion de carpetas de periodos
+│   ├── instalador_imports.py
+│   ├── requirements.txt         Dependencias oficiales (unico)
+│   ├── CONFIG_CORREOS.md
+│   ├── routes/                  Endpoints por modulo
+│   │   ├── auth.py
+│   │   ├── usuarios.py
+│   │   ├── estudiantes.py
+│   │   ├── docentes.py
+│   │   ├── academico.py
+│   │   ├── horarios.py
+│   │   ├── calificaciones.py
+│   │   ├── registros.py
+│   │   ├── comunicados.py
+│   │   ├── reportes.py
+│   │   ├── asistencia.py
+│   │   ├── periodos.py
+│   │   └── observador.py
+│   ├── utils/
+│   │   ├── database.py          Pool de conexiones
+│   │   ├── constants.py         Constantes globales
+│   │   └── helpers.py           hash, log, decoradores
+│   ├── backend/                 Templates, static, uploads
+│   ├── scripts/                 Scripts de migracion de base de datos
+│   ├── planillas_locales/       Almacenamiento de archivos Excel fisicos (periodos)
+│   └── historial_respaldos/     Copias de seguridad
+├── auto_save_git.py
+├── BACKUP_BASE_DATOS.sql
+├── correos,ymas.md
+└── indicaciones larry del futuro.txt

@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// DOCSTRY - MÓDULO USUARIOS
+// MÓDULO USUARIOS
 // CRUD completo de usuarios del sistema
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -11,54 +11,11 @@ async function renderUsuarios() {
         const data = await API.getUsuarios();
         const usuarios = data.usuarios;
 
-        content.innerHTML = `
-            <div class="card">
-                <div class="card-header-flex">
-                    <h2 class="card-title" style="border:none;margin:0;padding:0;">
-                        <i class="fas fa-users"></i> Gestión de Usuarios
-                    </h2>
-                    <button class="btn btn-verde" onclick="abrirModalUsuario()">
-                        <i class="fas fa-plus"></i> Nuevo Usuario
-                    </button>
-                </div>
-                <div class="filtros-container">
-                    <div class="busqueda-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="buscar-usuario" placeholder="Buscar por nombre, email o documento...">
-                    </div>
-                    <select id="filtro-rol" class="filtro-select">
-                        <option value="">Todos los roles</option>
-                        <option value="server_admin">Administrador</option>
-                        <option value="Rector">Rector</option>
-                        <option value="Coordinador">Coordinador</option>
-                        <option value="Profesor">Profesor</option>
-                    </select>
-                    <select id="filtro-estado" class="filtro-select">
-                        <option value="">Todos los estados</option>
-                        <option value="1">Activo</option>
-                        <option value="0">Inactivo</option>
-                    </select>
-                </div>
-                <div class="tabla-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nombre Completo</th>
-                                <th>Email</th>
-                                <th>Documento</th>
-                                <th>Rol</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-usuarios-body">
-                            ${generarFilasUsuarios(usuarios)}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+        const htmlRes = await fetch('/templates/modules html/usuarios.html');
+        if (!htmlRes.ok) throw new Error('Error cargando la vista de usuarios');
+        content.innerHTML = await htmlRes.text();
+
+        document.getElementById('tabla-usuarios-body').innerHTML = generarFilasUsuarios(usuarios);
 
         document.getElementById('buscar-usuario').addEventListener('input', () => filtrarUsuarios(usuarios));
         document.getElementById('filtro-rol').addEventListener('change', () => filtrarUsuarios(usuarios));

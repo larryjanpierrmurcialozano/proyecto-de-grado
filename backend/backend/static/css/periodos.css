@@ -1,0 +1,360 @@
+/* ═══════════════════════════════════════════════════════════════════
+   PERIODOS - Cards de período
+   ═══════════════════════════════════════════════════════════════════ */
+.periodos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.periodos-header-actions {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.periodo-card {
+    background: var(--blanco);
+    border: 2px solid var(--crema);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.2s;
+}
+
+.periodo-card:hover {
+    border-color: var(--cafe-claro);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.periodo-card.periodo-activo {
+    border-color: var(--verde);
+    background: linear-gradient(135deg, #fff 0%, #e8f5e9 100%);
+}
+
+.periodo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.periodo-header h3 {
+    font-size: 1.1rem;
+    color: var(--cafe-oscuro);
+}
+
+.periodo-body p {
+    margin: 0.5rem 0;
+    color: var(--cafe-medio);
+    font-size: 0.9rem;
+}
+
+.periodo-footer {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--crema);
+}
+
+.btn-sm {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PERÍODOS - Nuevo diseño por Grado/Grupo
+   ═══════════════════════════════════════════════════════════════════ */
+.periodos-global {
+    background: linear-gradient(135deg, var(--cafe-oscuro), var(--cafe-medio));
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    color: var(--blanco);
+}
+
+.seccion-titulo {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.periodos-global .seccion-titulo {
+    color: var(--crema);
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    padding-bottom: 0.75rem;
+}
+
+.periodos-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.periodo-mini {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.periodo-mini.periodo-abierto {
+    background: rgba(255,255,255,0.2);
+    box-shadow: 0 0 15px rgba(255,255,255,0.1);
+}
+
+.periodo-nombre {
+    display: block;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.periodo-fechas {
+    display: block;
+    font-size: 0.8rem;
+    opacity: 0.8;
+    margin-bottom: 0.75rem;
+}
+
+.btn-estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-estado-abierto {
+    background: var(--verde);
+    color: white;
+}
+
+.btn-estado-abierto:hover {
+    background: #218838;
+    transform: scale(1.05);
+}
+
+.btn-estado-cerrado {
+    background: rgba(255,255,255,0.3);
+    color: white;
+}
+
+.btn-estado-cerrado:hover {
+    background: rgba(255,255,255,0.5);
+    transform: scale(1.05);
+}
+
+/* Períodos por Grado */
+.periodos-por-grado {
+    margin-top: 1rem;
+}
+
+.periodos-por-grado > .seccion-titulo {
+    color: var(--cafe-oscuro);
+    border-bottom: 2px solid var(--crema);
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Accordion de Grados */
+.grado-accordion {
+    background: var(--blanco);
+    border: 2px solid var(--crema);
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.grado-accordion:hover {
+    border-color: var(--cafe-suave);
+}
+
+.grado-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    background: var(--crema);
+    transition: background 0.2s;
+}
+
+.grado-header:hover {
+    background: #f0e6d3;
+}
+
+.grado-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.grado-arrow {
+    color: var(--cafe-medio);
+    transition: transform 0.3s;
+}
+
+.grado-accordion.active .grado-arrow {
+    transform: rotate(90deg);
+}
+
+.grado-nombre {
+    font-weight: 600;
+    color: var(--cafe-oscuro);
+    font-size: 1rem;
+}
+
+.grado-grupos-count {
+    font-size: 0.8rem;
+    color: var(--cafe-suave);
+    background: var(--blanco);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+}
+
+.grado-stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+}
+
+.stat-completo {
+    color: var(--verde);
+}
+
+.stat-pendiente {
+    color: var(--cafe-medio);
+}
+
+.grado-body {
+    display: none;
+    padding: 0;
+    background: var(--blanco);
+}
+
+.grado-accordion.active .grado-body {
+    display: block;
+}
+
+/* Filas de Grupos */
+.grupo-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--crema);
+    gap: 1rem;
+}
+
+.grupo-row:last-child {
+    border-bottom: none;
+}
+
+.grupo-row:hover {
+    background: rgba(139, 90, 43, 0.03);
+}
+
+.grupo-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 150px;
+}
+
+.grupo-codigo {
+    font-weight: 700;
+    color: var(--cafe-oscuro);
+    font-size: 1rem;
+    background: var(--crema);
+    padding: 0.25rem 0.75rem;
+    border-radius: 8px;
+}
+
+.grupo-estudiantes {
+    font-size: 0.85rem;
+    color: var(--cafe-suave);
+}
+
+.grupo-progreso {
+    flex: 1;
+    max-width: 300px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.progreso-bar {
+    flex: 1;
+    height: 10px;
+    background: var(--crema);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.progreso-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--verde), #28a745);
+    border-radius: 5px;
+    transition: width 0.5s ease;
+}
+
+.progreso-text {
+    font-size: 0.8rem;
+    color: var(--cafe-medio);
+    white-space: nowrap;
+    min-width: 140px;
+}
+
+/* Responsive para Períodos */
+@media (max-width: 900px) {
+    .grado-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .grado-stats {
+        margin-left: 1.75rem;
+    }
+    
+    .grupo-row {
+        flex-wrap: wrap;
+    }
+    
+    .grupo-progreso {
+        width: 100%;
+        max-width: none;
+        margin-top: 0.5rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .periodos-mini-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .grado-stats {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .periodos-header-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .periodos-header-actions .btn {
+        width: 100%;
+    }
+}

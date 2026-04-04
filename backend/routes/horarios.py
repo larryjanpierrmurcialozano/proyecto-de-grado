@@ -308,6 +308,137 @@ def api_asignaciones_grupo(grupo_id):
         return _error_interno(e)
 
 
+# ── Exportar horarios a PDF ──────────────────────────────────────────────────
+
+@horarios_bp.route('/api/horarios/exportar-pdf', methods=['POST'])
+def api_exportar_horario_pdf():
+    """
+    Recibe:
+      - horarios: array de bloques con: nombre_materia, docente_nombre, docente_apellido, 
+                                        dia_semana, hora_inicio, codigo_grupo, nombre_grado
+      - titulo: string del título del reporte (ej: "6vo - 6-Aa")
+      - tipo: 'grupos' o 'docentes'
+    Retorna: PDF descargable
+    """
+    try:
+        data = request.json
+        horarios = data.get('horarios', [])
+        titulo = data.get('titulo', 'Horario')
+        tipo = data.get('tipo', 'grupos')
+        
+        from fpdf import FPDF
+        from datetime import datetime
+        
+        # Crear PDF
+        pdf = FPDF(orientation='L', unit='mm', format='A4')
+        pdf.add_page()
+        
+        # Encabezado
+        pdf.set_font('Arial', 'B', 14)
+        pdf.ln(3)
+        pdf.cell(0, 8, 'INSTITUCIÓN EDUCATIVA INEM JULIÁN MOTTA SALAS', ln=True, align='C')
+        pdf.set_font('Arial', 'B', 11)
+        pdf.cell(0, 7, f'Horario: {titulo}', ln=True, align='C')
+        pdf.set_font('Arial', '', 9)
+        pdf.cell(0, 6, f'Generado: {datetime.now().strftime("%d/%m/%Y %H:%M")}', ln=True, align='C')
+        pdf.ln(4)
+        
+        # Crear matriz de horario
+        dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
+        horas = [f'{h:02d}:00' for h in range(7, 14)]
+        
+        # Mapeo: dia_hora -> lista de materias/docentes
+        grilla = {}
+        for hora in horas:
+            for dia in dias:
+                grilla[f'{dia}_{hora}'] = []
+        
+        for h in horarios:
+            dia = h.get('dia_semana', '')
+            hora = h.get('hora_inicio', '')[:5]
+            materia = h.get('nombre_materia', '')
+            
+            if tipo == 'grupos':
+                docente = f"{h.get('docente_apellido', '')}, {h.get('docente_nombre', '')}".strip() or 'Sin prof.'
+                texto = f"{materia}\n{docente}"
+            else:
+                grupo = h.get('codigo_grupo', '')
+                texto = f"{materia}\n{grupo}"
+            
+            clave = f'{dia}_{hora}'
+            if clave in grilla:
+                grilla[clave].append(texto)
+        
+        # Dimensiones
+        col_hora = 14
+        col_dia = 32
+        row_height = 11
+        
+        # Calcular ancho total para centrar
+        ancho_tabla = col_hora + (col_dia * 5)
+        x_inicio = (pdf.w - 20 - ancho_tabla) / 2 + 10  # Centrar en la página
+        
+        # Encabezado de tabla
+        pdf.set_xy(x_inicio, pdf.y)
+        pdf.set_font('Arial', 'B', 9)
+        
+        pdf.cell(col_hora, row_height, 'HORA', border=1, align='C')
+        for dia in dias:
+            pdf.cell(col_dia, row_height, dia, border=1, align='C')
+        pdf.ln(row_height)
+        
+        # Filas de datos
+        pdf.set_font('Arial', '', 6.5)
+        for hora in horas:
+            pdf.set_x(x_inicio)
+            y_fila = pdf.y
+            
+            # Celda de hora
+            pdf.cell(col_hora, row_height, hora, border=1, align='C')
+            
+            # Celdas de días
+            for dia in dias:
+                clave = f'{dia}_{hora}'
+                materias = grilla.get(clave, [])
+                
+                # Construir texto
+                if materias:
+                    # Usar máximo 2 líneas (2 materias/horarios en la misma celda)
+                    texto = '\n'.join(materias[:2])
+                else:
+                    # Celda vacía: agregar espacios en blanco para llenar
+                    texto = ' \n '
+                
+                # Posición actual
+                x_celda = pdf.x
+                
+                # Usar multi_cell para llenar toda la altura
+                pdf.multi_cell(col_dia, row_height/2, texto, border=1, align='C', new_x='RIGHT', new_y='TOP')
+                
+                # Asegurar altura uniforme y posición correcta
+                pdf.set_xy(x_celda + col_dia, y_fila)
+            
+            pdf.ln(row_height)
+        
+        # Generar PDF en memoria
+        from io import BytesIO
+        from flask import send_file
+        
+        pdf_bytes = pdf.output()
+        filename = f"Horario_{titulo.replace(' ', '_').replace('-', '')}.pdf"
+        
+        return send_file(
+            BytesIO(pdf_bytes),
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        return _error_interno(e)
+    except Exception as e:
+        return _error_interno(e)
+
+
 @horarios_bp.route('/api/horarios/asignaciones-grado/<int:grado_id>', methods=['GET'])
 def api_asignaciones_grado(grado_id):
     """

@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// DOCSTRY - SISTEMA GLOBAL DE NOTIFICACIONES Y ERRORES
+// SISTEMA GLOBAL DE NOTIFICACIONES Y ERRORES
 // Complementa error-handler.css
 // ════════════════════════════════════════════════════════════════════════════════
 

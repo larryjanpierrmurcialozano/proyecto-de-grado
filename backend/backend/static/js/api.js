@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// DOCSTRY - API CLIENT
+// API CLIENT
 // Funciones para conectar con el backend
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -210,11 +210,29 @@ const API = {
         return this.request('/api/periodos');
     },
 
+    async crearPeriodo(data) {
+        return this.request('/api/periodos', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+
+    async actualizarPeriodo(id, data) {
+        return this.request(`/api/periodos/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+
     async cambiarEstadoPeriodo(id, estado) {
         return this.request(`/api/periodos/${id}/estado`, {
             method: 'PUT',
             body: JSON.stringify({ estado })
         });
+    },
+
+    async getResumenPeriodos(periodoId) {
+        return this.request(`/api/periodos/resumen?periodo_id=${periodoId}`);
     },
 
     // ═══════════════════════════════════════════════════════════════════
@@ -305,6 +323,23 @@ const API = {
             method: 'POST',
             body: JSON.stringify(data)
         });
+    },
+
+    async actualizarObservacion(id, data) {
+        return this.request(`/api/observador/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+
+    async eliminarObservacion(id) {
+        return this.request(`/api/observador/${id}`, {
+            method: 'DELETE'
+        });
+    },
+
+    getFormatoObservadorPdfUrl(id = null) {
+        return id ? `/api/observador/${id}/formato.pdf` : '/api/observador/formato.pdf';
     },
 
     // ═══════════════════════════════════════════════════════════════════

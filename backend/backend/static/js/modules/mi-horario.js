@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// DOCSTRY - MI HORARIO (vista solo lectura para docentes)
+// MÓDULO MI HORARIO (vista solo lectura para docentes)
 // Muestra la grilla semanal personal del profesor conectado
 // ════════════════════════════════════════════════════════════════════════════════
 

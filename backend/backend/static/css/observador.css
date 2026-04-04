@@ -1,0 +1,445 @@
+/* ═══════════════════════════════════════════════════════════════════
+   MODULO OBSERVADOR - Estilo profesional
+   ═══════════════════════════════════════════════════════════════════ */
+
+.obs-shell {
+    overflow: hidden;
+    border: 1px solid #eadfcd;
+    box-shadow: 0 10px 24px rgba(79, 55, 30, 0.08);
+}
+
+.obs-shell .obs-header-flex {
+    margin-bottom: 0;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #efe5d6;
+    background: linear-gradient(135deg, #fffdf8 0%, #f8f1e7 100%);
+}
+
+.obs-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.obs-title-wrap p {
+    margin: 0;
+    color: #8a6d42;
+    font-size: 0.9rem;
+}
+
+.obs-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.obs-guia-panel {
+    padding: 1rem 1.25rem 1.15rem;
+    border-bottom: 1px solid #efe5d6;
+    background: linear-gradient(180deg, #fffdfa 0%, #f9f4eb 100%);
+}
+
+.obs-guia-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.obs-guia-header h3 {
+    margin: 0;
+    color: #66421e;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.obs-guia-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.obs-guia-grid {
+    display: grid;
+    grid-template-columns: minmax(240px, 1fr) minmax(360px, 1.35fr);
+    gap: 0.85rem;
+}
+
+.obs-guia-imagen-wrap {
+    border: 1px solid #e6d6bf;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    min-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.obs-guia-imagen {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #fff;
+}
+
+.obs-guia-imagen-fallback {
+    width: 100%;
+    height: 100%;
+    min-height: 220px;
+    padding: 1rem;
+    color: #7e633f;
+    background: #fef7ea;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.55rem;
+}
+
+.obs-guia-imagen-fallback i {
+    font-size: 2rem;
+    color: #ad8a5c;
+}
+
+.obs-guia-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.7rem;
+}
+
+.obs-protocolo-card {
+    background: #fff;
+    border: 1px solid #eadbc8;
+    border-radius: 10px;
+    padding: 0.78rem 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    box-shadow: 0 3px 10px rgba(79, 55, 30, 0.06);
+}
+
+.obs-protocolo-card h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #553617;
+}
+
+.obs-protocolo-card p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: #6f5433;
+    min-height: 38px;
+}
+
+.obs-protocolo-card ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: 0.25rem;
+    color: #57442f;
+    font-size: 0.79rem;
+    line-height: 1.35;
+}
+
+.obs-protocolo-card .btn {
+    margin-top: auto;
+}
+
+.obs-protocolo-tipo_1 {
+    border-top: 3px solid #f2c96b;
+}
+
+.obs-protocolo-tipo_2 {
+    border-top: 3px solid #f08c52;
+}
+
+.obs-protocolo-tipo_3 {
+    border-top: 3px solid #d45a58;
+}
+
+.obs-guia-manual {
+    margin-top: 0.85rem;
+    border: 1px solid #ecdcc8;
+    border-radius: 10px;
+    background: #fff;
+    padding: 0.72rem 0.85rem;
+}
+
+.obs-guia-manual h4 {
+    margin: 0 0 0.4rem;
+    font-size: 0.9rem;
+    color: #64411c;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.obs-guia-manual ol {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: #5f482b;
+    font-size: 0.84rem;
+    display: grid;
+    gap: 0.28rem;
+}
+
+.obs-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    padding: 0.95rem 1.5rem;
+    background: #fbf7f1;
+    border-bottom: 1px solid #efe5d6;
+}
+
+.obs-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.obs-stat-total {
+    color: #6f5130;
+    background: #f3e8d8;
+}
+
+.obs-stat-abiertas {
+    color: #9a3412;
+    background: #ffedd5;
+}
+
+.obs-stat-positivas {
+    color: #166534;
+    background: #dcfce7;
+}
+
+.obs-stat-estudiantes {
+    color: #1d4ed8;
+    background: #dbeafe;
+}
+
+.obs-filtros-panel {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 0.85rem;
+    padding: 1rem 1.25rem;
+    background: #fff;
+    border-bottom: 1px solid #efe5d6;
+}
+
+.obs-filtro-item {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.obs-filtro-busqueda {
+    grid-column: span 4;
+}
+
+.obs-filtro-item label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #7a5a2b;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.obs-shell .filtro-select,
+.obs-shell .busqueda-box input,
+#form-observacion input,
+#form-observacion select,
+#form-observacion textarea {
+    border: 1px solid #d9c4a3;
+    box-shadow: none;
+}
+
+.obs-shell .filtro-select:focus,
+.obs-shell .busqueda-box input:focus,
+#form-observacion input:focus,
+#form-observacion select:focus,
+#form-observacion textarea:focus {
+    outline: none;
+    border-color: #8b5a2b;
+    box-shadow: 0 0 0 3px rgba(139, 90, 43, 0.14);
+}
+
+.obs-shell .obs-tabla-wrap {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+}
+
+.obs-shell thead th {
+    background: #f8f2e8;
+    border-bottom: 1px solid #e8d9c2;
+    color: #6d4a24;
+    font-size: 0.78rem;
+    letter-spacing: 0.35px;
+    text-transform: uppercase;
+}
+
+.obs-shell tbody tr:hover {
+    background: rgba(139, 90, 43, 0.05);
+}
+
+.obs-shell .obs-desc-cell {
+    max-width: 280px;
+    white-space: normal;
+    line-height: 1.45;
+}
+
+.obs-grupo-tag {
+    display: inline-flex;
+    margin-top: 0.25rem;
+    padding: 0.12rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #7a5a2b;
+    background: #f3e8d8;
+}
+
+.obs-shell .obs-paginacion {
+    margin-top: 0;
+    border-top: 1px solid #efe5d6;
+    background: #fffdf8;
+}
+
+.obs-estudiante-panel {
+    margin-bottom: 1rem;
+    border: 1px solid #eddcc2;
+    border-radius: 12px;
+    padding: 0.95rem;
+    background: linear-gradient(180deg, #fffcf8 0%, #faf4ea 100%);
+}
+
+.obs-estudiante-panel h4 {
+    margin: 0 0 0.65rem 0;
+    color: #6f4e2d;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+#obs-estudiante {
+    min-height: 44px;
+    font-weight: 600;
+}
+
+#obs-estudiante optgroup {
+    font-style: normal;
+    font-weight: 700;
+    color: #7a5a2b;
+}
+
+.obs-ayuda-protocolo {
+    margin: 0.2rem 0 1rem 0;
+    padding: 0.75rem 0.9rem;
+    border-left: 4px solid var(--cafe-claro);
+    background: rgba(255, 244, 225, 0.65);
+    color: #7a5a2b;
+    font-size: 0.9rem;
+    border-radius: 8px;
+}
+
+.obs-check-group {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.obs-check-group label {
+    display: inline-flex;
+    gap: 0.55rem;
+    align-items: center;
+    font-weight: 600;
+}
+
+#tabla-observador-body td {
+    vertical-align: top;
+}
+
+#tabla-observador-body .acciones-btns {
+    justify-content: flex-start;
+}
+
+@media (max-width: 1100px) {
+    .obs-guia-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .obs-guia-cards {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .obs-filtros-panel {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .obs-filtro-busqueda {
+        grid-column: span 6;
+    }
+
+    .obs-filtro-item {
+        grid-column: span 3;
+    }
+}
+
+@media (max-width: 900px) {
+    .obs-shell .obs-header-flex {
+        align-items: stretch;
+    }
+
+    .obs-header-actions {
+        width: 100%;
+    }
+
+    .obs-shell .obs-header-flex .btn,
+    .obs-header-actions .btn {
+        width: 100%;
+    }
+
+    .obs-guia-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .obs-guia-header-actions {
+        width: 100%;
+    }
+
+    .obs-guia-header-actions .btn {
+        width: 100%;
+    }
+
+    .obs-filtros-panel {
+        grid-template-columns: 1fr;
+        gap: 0.7rem;
+    }
+
+    .obs-filtro-item,
+    .obs-filtro-busqueda {
+        grid-column: span 1;
+    }
+
+    .obs-stats {
+        padding: 0.8rem 1rem;
+    }
+
+    .obs-estudiante-panel {
+        padding: 0.75rem;
+    }
+}

@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// DOCSTRY - MÓDULO ESTUDIANTES
+// MÓDULO ESTUDIANTES
 // CRUD completo de estudiantes
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -22,53 +22,18 @@ async function renderEstudiantes() {
         const opcionesGrado = Array.from(new Set(GRUPOS_CACHE_EST.map(g => g.nombre_grado))).filter(Boolean);
         const opcionesGrupo = GRUPOS_CACHE_EST.map(g => ({ id: g.id_grupo, nombre: g.codigo_grupo, grado: g.nombre_grado }));
 
-        content.innerHTML = `
-            <div class="card">
-                <div class="card-header-flex">
-                    <h2 class="card-title" style="border:none;margin:0;padding:0;">
-                        <i class="fas fa-user-graduate"></i> Gestión de Estudiantes
-                    </h2>
-                    <button class="btn btn-verde" onclick="abrirModalEstudiante()">
-                        <i class="fas fa-plus"></i> Nuevo Estudiante
-                    </button>
-                </div>
-                <div class="filtros-container">
-                    <div class="busqueda-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="filtro-estudiante-buscar" placeholder="Buscar por nombre, apellido o documento">
-                    </div>
-                    <select class="filtro-select" id="filtro-estudiante-grado">
-                        <option value="">Todos los grados</option>
-                        ${opcionesGrado.map(g => `<option value="${g}">${g}</option>`).join('')}
-                    </select>
-                    <select class="filtro-select" id="filtro-estudiante-grupo">
-                        <option value="">Todos los grupos</option>
-                        ${opcionesGrupo.map(g => `<option value="${g.id}">${g.nombre} (${g.grado})</option>`).join('')}
-                    </select>
-                    <select class="filtro-select" id="filtro-estudiante-estado">
-                        <option value="">Todos los estados</option>
-                        <option value="Activo">Activo</option>
-                        <option value="Inactivo">Inactivo</option>
-                    </select>
-                </div>
-                <div class="tabla-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Documento</th>
-                                <th>Nombre Completo</th>
-                                <th>Grado / Grupo</th>
-                                <th>Acudiente</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-estudiantes"></tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+        const htmlRes = await fetch('/templates/modules html/estudiantes.html');
+        if (!htmlRes.ok) throw new Error('Error cargando la vista de estudiantes');
+        content.innerHTML = await htmlRes.text();
+
+        const selectGrado = document.getElementById('filtro-estudiante-grado');
+        const selectGrupo = document.getElementById('filtro-estudiante-grupo');
+
+        selectGrado.innerHTML = '<option value="">Todos los grados</option>' + 
+            opcionesGrado.map(g => `<option value="${g}">${g}</option>`).join('');
+            
+        selectGrupo.innerHTML = '<option value="">Todos los grupos</option>' + 
+            opcionesGrupo.map(g => `<option value="${g.id}">${g.nombre} (${g.grado})</option>`).join('');
 
         document.getElementById('filtro-estudiante-buscar').addEventListener('input', aplicarFiltrosEstudiantes);
         document.getElementById('filtro-estudiante-grado').addEventListener('change', aplicarFiltrosEstudiantes);

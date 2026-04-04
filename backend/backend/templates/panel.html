@@ -6,6 +6,12 @@
     <title>DOCSTRY - Panel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/panel.css">
+    <link rel="stylesheet" href="/static/css/horarios.css">
+    <link rel="stylesheet" href="/static/css/asistencia.css">
+    <link rel="stylesheet" href="/static/css/calificaciones.css">
+    <link rel="stylesheet" href="/static/css/comunicados.css">
+    <link rel="stylesheet" href="/static/css/periodos.css">
+    <link rel="stylesheet" href="/static/css/observador.css">
 </head>
 <body>
     <!-- MODAL GRADO -->
@@ -795,10 +801,16 @@
     </div>
 
 
+    <!-- Librerías para exportar a PDF y Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
     <!-- Scripts modulares -->
     <script src="/static/js/api.js"></script>
     <script src="/static/js/helpers.js"></script>
     <script src="/static/js/panel.js"></script>
+    <script src="/static/js/modules/asistencia.js"></script>
     <script src="/static/js/modules/calificaciones.js"></script>
     <script src="/static/js/modules/usuarios.js"></script>
     <script src="/static/js/modules/estudiantes.js"></script>
@@ -810,5 +822,7 @@
     <script src="/static/js/modules/horarios.js"></script>
     <script src="/static/js/modules/horarios-gestion.js"></script>
     <script src="/static/js/modules/mi-horario.js"></script>
+    <script src="/static/js/modules/periodos.js"></script>
+    <script src="/static/js/modules/observador.js"></script>
 </body>
 </html>

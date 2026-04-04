@@ -1,5 +1,6 @@
 {
     "liveshare.alwaysFollowHost": false,
     "commentTranslate.hover.enabled": false,
-    "github.copilot.nextEditSuggestions.enabled": true
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }

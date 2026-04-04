@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// DOCSTRY - MÓDULO GRADOS Y GRUPOS
+// MÓDULO GRADOS Y GRUPOS
 // CRUD de grados, grupos y visualización de estudiantes por grupo
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -16,43 +16,25 @@ async function renderGrados() {
     content.innerHTML = Helpers.loading();
     await cargarGrados();
     await cargarGrupos();
-    content.innerHTML = `
-        <div class="card">
-            <div class="card-header-flex">
-                <h2 class="card-title" style="border:none;margin:0;padding:0;">
-                    <i class="fas fa-layer-group"></i> Grados y Grupos
-                </h2>
-                <div>
-                    <button class="btn btn-cafe" onclick="abrirModalGrado()">
-                        <i class="fas fa-plus"></i> Nuevo Grado
-                    </button>
-                    <button class="btn btn-verde" onclick="abrirModalGrupo()">
-                        <i class="fas fa-plus"></i> Nuevo Grupo
-                    </button>
-                </div>
-            </div>
-            <div class="tabs-container">
-                <button class="tab-btn active" onclick="mostrarTab('grados')">Grados</button>
-                <button class="tab-btn" onclick="mostrarTab('grupos')">Grupos</button>
-            </div>
-            <div id="tab-grados" class="tab-content active">
-                <div class="tabla-container">
-                    ${dibujarTablaGrados()}
-                </div>
-            </div>
-            <div id="tab-grupos" class="tab-content">
-                <div class="filtros-container">
-                    <select class="filtro-select" id="filtro-grado-grupo" onchange="filtrarGruposPorGrado()">
-                        <option value="">Todos los grados</option>
-                        ${GRADOS_CACHE.map(g => `<option value='${g.id_grado}'>${g.nombre_grado}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="tabla-container">
-                    ${dibujarTablaGrupos()}
-                </div>
-            </div>
-        </div>
-    `;
+    
+    try {
+        const htmlRes = await fetch('/templates/modules html/grados.html');
+        if (!htmlRes.ok) throw new Error('Error cargando la vista de grados');
+        content.innerHTML = await htmlRes.text();
+
+        document.getElementById('contenedor-tabla-grados').innerHTML = dibujarTablaGrados();
+        
+        const filtroSelect = document.getElementById('filtro-grado-grupo');
+        if (filtroSelect) {
+            filtroSelect.innerHTML = '<option value="">Todos los grados</option>' +
+                GRADOS_CACHE.map(g => `<option value='${g.id_grado}'>${g.nombre_grado}</option>`).join('');
+        }
+
+        document.getElementById('contenedor-tabla-grupos').innerHTML = dibujarTablaGrupos();
+    } catch (error) {
+        console.error('Error renderGrados:', error);
+        content.innerHTML = Helpers.error('No se pudo cargar la vista de grados.');
+    }
 }
 
 async function cargarGrados() {

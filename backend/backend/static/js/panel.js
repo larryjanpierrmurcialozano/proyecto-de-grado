@@ -288,6 +288,7 @@ const TITULOS_PAGINAS = {
     'horarios': 'Horarios',
     'horarios-gestion': 'Horarios Docentes',
     'periodos': 'Períodos',
+    'horarios-gestion': 'Horarios Docentes',
     'calificaciones': 'Calificaciones',
     'asistencia': 'Asistencia',
     'observador': 'Observador',
@@ -326,9 +327,9 @@ function cargarPagina(pagina) {
         // Módulos en desarrollo
         case 'horarios':        renderHorarios(); break;
         case 'horarios-gestion': renderHorariosGestion(); break;
-        case 'periodos':        renderPlaceholder('Gestión de Períodos', 'fa-calendar-alt'); break;
-        case 'asistencia':      renderPlaceholder('Control de Asistencia', 'fa-clipboard-check'); break;
-        case 'observador':      renderPlaceholder('Observador del Estudiante', 'fa-eye'); break;
+        case 'periodos':        if (typeof renderPeriodos === 'function') { renderPeriodos(); } else { renderPlaceholder('Gestión de Períodos (Cargando...)', 'fa-calendar-alt'); } break;
+        case 'asistencia':      if (typeof renderAsistencia === 'function') { renderAsistencia(); } else { renderPlaceholder('Control de Asistencia (Cargando...)', 'fa-clipboard-check'); } break;
+        case 'observador':      if (typeof renderObservador === 'function') { renderObservador(); } else { renderPlaceholder('Observador del Estudiante (Cargando...)', 'fa-eye'); } break;
         case 'logs':            renderPlaceholder('Logs del Sistema', 'fa-history'); break;
         case 'mis-clases':      renderPlaceholder('Mis Clases', 'fa-chalkboard'); break;
         case 'mis-materias':    renderPlaceholder('Mis Materias', 'fa-book-open'); break;
@@ -365,6 +366,7 @@ function renderDashboard() {
             { id: 'grados', icono: 'fa-layer-group', titulo: 'Grados y Grupos', descripcion: 'Configura los grados académicos y sus grupos con capacidades.' },
             { id: 'materias', icono: 'fa-book', titulo: 'Materias', descripcion: 'Administra las materias, su intensidad horaria y descripción.' },
             { id: 'horarios', icono: 'fa-clock', titulo: 'Horarios', descripcion: 'Visualiza y gestiona los horarios de clases por grupo.' },
+            { id: 'horarios-gestion', icono: 'fa-calendar-alt', titulo: 'Horarios Docentes', descripcion: 'Consulta los horarios de docentes por grado y grupo, permite descargar en Excel o PDF.' },
             { id: 'periodos', icono: 'fa-calendar-alt', titulo: 'Períodos', descripcion: 'Configura los períodos académicos del año escolar.' },
             { id: 'calificaciones', icono: 'fa-star', titulo: 'Calificaciones', descripcion: 'Registra y consulta las notas de los estudiantes por actividad.' },
             { id: 'asistencia', icono: 'fa-clipboard-check', titulo: 'Asistencia', descripcion: 'Control diario de asistencia de estudiantes por grupo.' },

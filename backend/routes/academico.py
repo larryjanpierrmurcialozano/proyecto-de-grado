@@ -552,35 +552,4 @@ def api_asignacion_eliminar(id):
     except Exception as e:
         return _error_interno(e)
 
-# ── Períodos ─────────────────────────────────────────────────────────────────
-
-@academico_bp.route('/api/periodos', methods=['GET'])
-def api_periodos():
-    """Listar períodos"""
-    try:
-        conn = get_db()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM periodos ORDER BY numero_periodo")
-        periodos = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return jsonify({'status': 'ok', 'periodos': periodos}), 200
-    except Exception as e:
-        return _error_interno(e)
-
-
-@academico_bp.route('/api/periodos/<int:id>/estado', methods=['PUT'])
-def api_periodo_cambiar_estado(id):
-    """Cambiar estado de período"""
-    try:
-        data = request.get_json()
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute("UPDATE periodos SET estado = %s WHERE id_periodo = %s", (data['estado'], id))
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return jsonify({'status': 'ok'}), 200
-    except Exception as e:
-        return _error_interno(e)
     

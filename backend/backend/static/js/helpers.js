@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// DOCSTRY - HELPERS DE RENDERIZADO
+// HELPERS DE RENDERIZADO
 // Funciones utilitarias para generar HTML reutilizable
 // ════════════════════════════════════════════════════════════════════════════════
 

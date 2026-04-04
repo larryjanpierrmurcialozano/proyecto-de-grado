@@ -18,73 +18,26 @@ const ICONOS_MATERIA = {
     'CIE': 'fa-flask'
 };
 
-function renderMaterias() {
+async function renderMaterias() {
     const content = document.getElementById('main-content');
-    content.innerHTML = `
-        <div class="card">
-            <div class="mat-header">
-                <div class="mat-header-left">
-                    <i class="fas fa-book"></i>
-                    <h2>Gestión de Materias</h2>
-                </div>
-                <button class="btn btn-verde" id="btn-nueva-materia">
-                    <i class="fas fa-plus"></i> Nueva Materia
-                </button>
-            </div>
+    content.innerHTML = Helpers.loading();
 
-            <div class="mat-stats" id="mat-stats">
-                <div class="mat-stat-card">
-                    <div class="mat-stat-icon mat-total"><i class="fas fa-book"></i></div>
-                    <div class="mat-stat-info">
-                        <span class="mat-stat-valor" id="mat-stat-total">-</span>
-                        <span class="mat-stat-label">Total</span>
-                    </div>
-                </div>
-                <div class="mat-stat-card">
-                    <div class="mat-stat-icon mat-activas"><i class="fas fa-chalkboard-teacher"></i></div>
-                    <div class="mat-stat-info">
-                        <span class="mat-stat-valor" id="mat-stat-docentes">-</span>
-                        <span class="mat-stat-label">Con docentes</span>
-                    </div>
-                </div>
-                <div class="mat-stat-card">
-                    <div class="mat-stat-icon mat-horas"><i class="fas fa-clock"></i></div>
-                    <div class="mat-stat-info">
-                        <span class="mat-stat-valor" id="mat-stat-horas">-</span>
-                        <span class="mat-stat-label">Hrs/semana</span>
-                    </div>
-                </div>
-            </div>
+    try {
+        const htmlRes = await fetch('/templates/modules html/materias.html');
+        if (!htmlRes.ok) throw new Error('Error cargando la vista de materias');
+        content.innerHTML = await htmlRes.text();
 
-            <div class="mat-toolbar">
-                <div class="mat-busqueda">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="mat-buscar" placeholder="Buscar por nombre, código o descripción..." oninput="filtrarMaterias()">
-                </div>
-                <select class="mat-filtro-intensidad" id="mat-filtro-intensidad" onchange="filtrarMaterias()">
-                    <option value="">Todas las intensidades</option>
-                    <option value="1-2">1-2 hrs/semana</option>
-                    <option value="3-4">3-4 hrs/semana</option>
-                    <option value="5+">5+ hrs/semana</option>
-                </select>
-                <select class="mat-filtro-intensidad" id="mat-filtro-grado" onchange="filtrarMaterias()">
-                    <option value="">Todos los grados</option>
-                </select>
-            </div>
+        document.getElementById('btn-nueva-materia').addEventListener('click', () => abrirModalMateria());
+        
+        // Add event listeners for filters since oninput/onchange were removed from DOM template
+        document.getElementById('mat-buscar')?.addEventListener('input', filtrarMaterias);
+        document.getElementById('mat-filtro-intensidad')?.addEventListener('change', filtrarMaterias);
+        document.getElementById('mat-filtro-grado')?.addEventListener('change', filtrarMaterias);
 
-            <div class="mat-grid" id="mat-grid">
-                <div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando materias...</div>
-            </div>
-
-            <div class="paginacion" id="mat-paginacion" style="display:none;">
-                <span class="paginacion-info" id="mat-pag-info"></span>
-                <div class="paginacion-btns" id="mat-pag-btns"></div>
-            </div>
-        </div>
-    `;
-
-    document.getElementById('btn-nueva-materia').addEventListener('click', () => abrirModalMateria());
-    cargarMaterias();
+        await cargarMaterias();
+    } catch (e) {
+        content.innerHTML = `<div class="alerta error">${e.message}</div>`;
+    }
 }
 
 async function cargarMaterias() {

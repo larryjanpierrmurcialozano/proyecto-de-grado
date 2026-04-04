@@ -27,6 +27,11 @@ from routes.comunicados import comunicados_bp
 from routes.reportes import reportes_bp
 from routes.horarios import horarios_bp
 from routes.calificaciones import calificaciones_bp
+from routes.asistencia import asistencia_bp
+from routes.periodos import periodos_bp
+from routes.observador import observador_bp
+# [DESHABILITADO PARA TECNÓLOGO] from routes.servicio_drive import drive_bp
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # CONFIGURACIÓN
@@ -65,14 +70,17 @@ app.register_blueprint(docentes_bp)      # Docentes admin + Panel docente
 app.register_blueprint(academico_bp)     # Grados, Grupos, Materias, Asignaciones, Períodos
 app.register_blueprint(horarios_bp)      # CRUD Horarios + Niveles + Asignaciones-grupo
 app.register_blueprint(calificaciones_bp)# Módulo Offline First de Calificaciones por Excel
-app.register_blueprint(registros_bp)     # Asistencia + Observador
+app.register_blueprint(registros_bp)     # Asistencia legacy
 app.register_blueprint(comunicados_bp)   # CRUD Comunicados
 app.register_blueprint(reportes_bp)      # Reportes + Logs + Envío de correo
+app.register_blueprint(asistencia_bp)    # Módulo de Asistencia
+app.register_blueprint(periodos_bp)      # Módulo de Períodos
+app.register_blueprint(observador_bp)    # Módulo Observador
+# [DESHABILITADO PARA TECNÓLOGO] app.register_blueprint(drive_bp)        # Módulo de integración con Google Drive
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MIDDLEWARE — AUTENTICACIÓN GLOBAL
-# ══════════════════════════════════════════════════════════════════════════════
-
+# ══════════════════════
 @app.before_request
 def verificar_autenticacion():
     """Verifica que toda petición a /api/ esté autenticada (excepto rutas públicas)."""
@@ -104,6 +112,13 @@ def favicon():
         os.path.join(app.root_path, 'backend', 'static', 'img'),
         'logo.png', mimetype='image/png'
     )
+
+# ── RUTA PARA SERVIR FRAGMENTOS HTML DE MÓDULOS DEL FRONTEND ──
+@app.route('/templates/modules html/<filename>')
+def serve_module_html(filename):
+    """Devuelve los fragmentos HTML puros sin renderizar todo el layout."""
+    import flask
+    return flask.render_template(f'modules html/{filename}')
 
 # ══════════════════════════════════════════════════════════════════════════════
 # INICIO DEL SERVIDOR

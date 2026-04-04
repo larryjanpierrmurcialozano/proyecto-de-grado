@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// DOCSTRY - MÓDULO DOCENTES
+// MÓDULO DOCENTES
 // Gestión de docentes y asignaciones de materias
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -29,31 +29,12 @@ async function renderDocentes() {
             `;
         }).join('') : '<tr><td colspan="7">' + Helpers.sinDatos('No hay docentes registrados') + '</td></tr>';
 
-        content.innerHTML = `
-            <div class="card">
-                <div class="card-header-flex">
-                    <h2 class="card-title" style="border:none;margin:0;padding:0;">
-                        <i class="fas fa-chalkboard-teacher"></i> Gestión de Docentes
-                    </h2>
-                </div>
-                <div class="tabla-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Documento</th>
-                                <th>Nombre Completo</th>
-                                <th>Correo</th>
-                                <th>Materias Asignadas</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>${filas}</tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+        const htmlRes = await fetch('/templates/modules html/docentes.html');
+        if (!htmlRes.ok) throw new Error('Error cargando la vista de docentes');
+        content.innerHTML = await htmlRes.text();
+
+        const tbody = document.getElementById('tbody-docentes');
+        tbody.innerHTML = filas;
 
     } catch (error) {
         content.innerHTML = Helpers.error('No se pudieron cargar los docentes.');

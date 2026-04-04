@@ -1,92 +1,52 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// DOCSTRY - MÓDULO COMUNICADOS
+// MÓDULO COMUNICADOS
 // CRUD de comunicados institucionales con filtros y roles
 // ════════════════════════════════════════════════════════════════════════════════
 
 let comunicadosCargados = [];
 
-function renderComunicados() {
+async function renderComunicados() {
     const esAdmin = ['server_admin', 'rector', 'coordinador'].includes(USUARIO.rol);
     const esProfesor = USUARIO.rol.toLowerCase() === 'profesor' || USUARIO.rol.toLowerCase() === 'docente';
     const totalCols = esAdmin ? 7 : (esProfesor ? 6 : 6);
     const content = document.getElementById('main-content');
-    content.innerHTML = `
-        <!-- HEADER -->
-        <div class="com-header">
-            <div>
-                <h1><i class="fas fa-bullhorn"></i> ${esProfesor ? 'Comunicados' : 'Gestión de Comunicados'}</h1>
-                <p>${esProfesor ? 'Comunicados dirigidos al equipo docente' : 'Administra los comunicados institucionales'}</p>
-            </div>
-            ${esAdmin ? `<button class="btn btn-verde" onclick="abrirModalComunicado()">
-                <i class="fas fa-plus"></i> Nuevo Comunicado
-            </button>` : ''}
-        </div>
+    
+    try {
+        content.innerHTML = '<div style="padding:2rem;text-align:center;"><i class="fas fa-spinner fa-spin fa-2x"></i> Cargando módulo...</div>';
+        
+        // 1. OBTENEMOS EL HTML PURO DESDE FLASK
+        const response = await fetch('/templates/modules html/comunicados.html');
+        if (!response.ok) throw new Error('Error al cargar la plantilla');
+        const fragmentHTML = await response.text();
+        
+        // 2. INYECTAMOS
+        content.innerHTML = fragmentHTML;
+        
+        // 3. APLICAMOS REGLAS DE ROLES AL HTML INYECTADO
+        if (esProfesor) {
+            document.getElementById('com-header-title').innerHTML = '<i class="fas fa-bullhorn"></i> Comunicados';
+            document.getElementById('com-header-subtitle').innerText = 'Comunicados dirigidos al equipo docente';
+            document.getElementById('filtro-audiencia-container').style.display = 'none'; // Profesores no filtran audiencia
+            const thAudiencia = document.getElementById('th-audiencia');
+            if (thAudiencia) thAudiencia.style.display = 'none'; // Ocultan la columna
+            
+            const thAcciones = document.getElementById('th-acciones');
+            if(thAcciones) thAcciones.innerText = 'Ver';
+        } else if (esAdmin) {
+            document.getElementById('btn-nuevo-comunicado').style.display = 'inline-block';
+        }
+        
+        // Ocultar columna audiencia si es profesor en el colspan del loading..
+        const tdLoading = document.getElementById('com-loading-td');
+        if (tdLoading) tdLoading.colSpan = totalCols;
 
-        <!-- LAYOUT PRINCIPAL -->
-        <div class="com-layout">
-            <!-- FILTROS LATERALES -->
-            <div class="com-filtros">
-                <div class="com-filtro-grupo">
-                    <label>Tipo</label>
-                    <select id="filtro-com-tipo" onchange="filtrarComunicados()">
-                        <option value="">Todos</option>
-                        <option value="Circular">Circular</option>
-                        <option value="Aviso">Aviso</option>
-                        <option value="Información">Información</option>
-                        <option value="Advertencia">Advertencia</option>
-                    </select>
-                </div>
-                ${!esProfesor ? `<div class="com-filtro-grupo">
-                    <label>Dirigido a</label>
-                    <select id="filtro-com-audiencia" onchange="filtrarComunicados()">
-                        <option value="">Todos</option>
-                        <option value="General">General</option>
-                        <option value="Docentes">Docentes</option>
-                        <option value="Coordinación">Coordinación</option>
-                        <option value="Administrativo">Administrativo</option>
-                    </select>
-                </div>` : ''}
-                <div class="com-filtro-grupo">
-                    <label>Prioridad</label>
-                    <select id="filtro-com-prioridad" onchange="filtrarComunicados()">
-                        <option value="">Todas</option>
-                        <option value="Urgente">Urgente</option>
-                        <option value="Alta">Alta</option>
-                        <option value="Media">Media</option>
-                        <option value="Baja">Baja</option>
-                    </select>
-                </div>
-                <button class="btn btn-cafe" style="width:100%;" onclick="limpiarFiltrosCom()">
-                    <i class="fas fa-redo"></i> Limpiar
-                </button>
-            </div>
+        // 4. CARGAMOS LOS DATOS
+        cargarComunicados();
 
-            <!-- TABLA -->
-            <div class="com-tabla-wrap">
-                <table class="com-tabla">
-                    <thead>
-                        <tr>
-                            <th>Título</th>
-                            <th>Tipo</th>
-                            ${!esProfesor ? '<th>Dirigido a</th>' : ''}
-                            <th>Prioridad</th>
-                            <th>Fecha</th>
-                            <th>Estado</th>
-                            ${esAdmin ? '<th>Acciones</th>' : (esProfesor ? '<th>Ver</th>' : '')}
-                        </tr>
-                    </thead>
-                    <tbody id="com-tbody">
-                        <tr>
-                            <td colspan="${totalCols}" style="text-align:center;padding:2rem;color:#999;">
-                                <i class="fas fa-spinner fa-spin"></i> Cargando...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-    cargarComunicados();
+    } catch (error) {
+        console.error(error);
+        content.innerHTML = '<div style="color:red;padding:20px;">Error al cargar el módulo de comunicados. Contacta soporte.</div>';
+    }
 }
 
 async function cargarComunicados() {

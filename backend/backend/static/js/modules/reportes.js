@@ -1,110 +1,20 @@
 // ════════════════════════════════════════════════════════════════════════════════
-// DOCSTRY - MÓDULO REPORTES
+// MÓDULO REPORTES
 // Generación y envío de reportes por correo electrónico
 // ════════════════════════════════════════════════════════════════════════════════
 
-function renderReportes() {
+async function renderReportes() {
     const content = document.getElementById('main-content');
-    content.innerHTML = `
-        <div class="card">
-            <div class="card-header-flex">
-                <h2 class="card-title" style="border:none;margin:0;padding:0;">
-                    <i class="fas fa-file-pdf"></i> Generador de Reportes
-                </h2>
-            </div>
+    content.innerHTML = Helpers.loading();
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
-                <!-- COLUMNA IZQUIERDA: Opciones de Reportes -->
-                <div>
-                    <h3 style="margin-bottom: 1rem; color: var(--cafe-oscuro);"><i class="fas fa-list"></i> Tipos de Reportes</h3>
-                    <div class="reportes-grid" style="display: flex; flex-direction: column; gap: 1rem;">
-                        <div class="reporte-categoria">
-                            <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-graduation-cap"></i> Académicos</h4>
-                            <div class="reporte-item" onclick="seleccionarReporte('boletin')" style="margin: 0.5rem 0; padding: 0.75rem; cursor: pointer; border-radius: 5px; background: #f5f5f5;">
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <input type="radio" name="tipo-reporte" value="boletin" id="radio-boletin">
-                                    <label for="radio-boletin" style="margin: 0; cursor: pointer;">Boletín de Calificaciones</label>
-                                </div>
-                            </div>
-                            <div class="reporte-item" onclick="seleccionarReporte('consolidado')" style="margin: 0.5rem 0; padding: 0.75rem; cursor: pointer; border-radius: 5px; background: #f5f5f5;">
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <input type="radio" name="tipo-reporte" value="consolidado" id="radio-consolidado">
-                                    <label for="radio-consolidado" style="margin: 0; cursor: pointer;">Consolidado de Notas</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="reporte-categoria">
-                            <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-clipboard-check"></i> Asistencia</h4>
-                            <div class="reporte-item" onclick="seleccionarReporte('asistencia_diaria')" style="margin: 0.5rem 0; padding: 0.75rem; cursor: pointer; border-radius: 5px; background: #f5f5f5;">
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <input type="radio" name="tipo-reporte" value="asistencia_diaria" id="radio-asistencia_diaria">
-                                    <label for="radio-asistencia_diaria" style="margin: 0; cursor: pointer;">Asistencia Diaria</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="reporte-categoria">
-                            <h4 style="margin-bottom: 0.5rem;"><i class="fas fa-building"></i> Institucionales</h4>
-                            <div class="reporte-item" onclick="seleccionarReporte('estudiantes')" style="margin: 0.5rem 0; padding: 0.75rem; cursor: pointer; border-radius: 5px; background: #f5f5f5;">
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <input type="radio" name="tipo-reporte" value="estudiantes" id="radio-estudiantes-rep">
-                                    <label for="radio-estudiantes-rep" style="margin: 0; cursor: pointer;">Lista de Estudiantes</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- COLUMNA DERECHA: Formulario de Envío -->
-                <div>
-                    <h3 style="margin-bottom: 1rem; color: var(--cafe-oscuro);"><i class="fas fa-envelope"></i> Enviar Reporte por Correo</h3>
-                    <form id="form-enviar-reporte" style="display: flex; flex-direction: column; gap: 1rem;">
-                        <div class="form-group">
-                            <label><i class="fas fa-user"></i> Remitente</label>
-                            <input type="email" id="reporte-remitente" placeholder="ejemplo@gmail.com" value="" style="width: 100%;">
-                        </div>
-                        <div class="form-group">
-                            <label><i class="fas fa-file-pdf"></i> Selecciona tipo de reporte</label>
-                            <select id="reporte-tipo-select" style="width: 100%;">
-                                <option value="">-- Selecciona un reporte --</option>
-                                <option value="boletin">Boletín de Calificaciones</option>
-                                <option value="consolidado">Consolidado de Notas</option>
-                                <option value="asistencia_diaria">Asistencia Diaria</option>
-                                <option value="estudiantes">Lista de Estudiantes</option>
-                            </select>
-                        </div>
-                        <div style="border-top: 1px solid #ddd; padding-top: 1rem;">
-                            <div class="form-group">
-                                <label><i class="fas fa-radio-alt"></i> Destinatario</label>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                                <input type="radio" name="tipo-destinatario" value="especifico" id="radio-especifico" checked>
-                                <label for="radio-especifico" style="margin: 0;">Correo específico</label>
-                            </div>
-                            <div id="container-correo-especifico" style="margin-bottom: 1rem;">
-                                <input type="email" id="reporte-correo-especifico" placeholder="padre@gmail.com" style="width: 100%;">
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                                <input type="radio" name="tipo-destinatario" value="grupo" id="radio-grupo">
-                                <label for="radio-grupo" style="margin: 0;">Todos los correos de un grupo</label>
-                            </div>
-                            <div id="container-grupo" style="margin-bottom: 1rem; display: none;">
-                                <select id="reporte-grupo-select" style="width: 100%;">
-                                    <option value="">-- Selecciona un grupo --</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label><i class="fas fa-message"></i> Mensaje</label>
-                            <textarea id="reporte-mensaje" placeholder="Escribe el mensaje que deseas enviar..." style="width: 100%; min-height: 120px; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-family: inherit;"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-verde" style="width: 100%;">
-                            <i class="fas fa-send"></i> Enviar Correo
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    `;
+    try {
+        const htmlRes = await fetch('/templates/modules html/reportes.html');
+        if (!htmlRes.ok) throw new Error('Error cargando la vista de reportes');
+        content.innerHTML = await htmlRes.text();
+    } catch (e) {
+        content.innerHTML = `<div class="alerta error">${e.message}</div>`;
+        return;
+    }
 
     cargarGruposReporte();
 

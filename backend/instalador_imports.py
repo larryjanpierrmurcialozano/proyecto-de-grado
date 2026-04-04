@@ -37,6 +37,17 @@ from typing import Set
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Mapeo de nombres de importación (código) a nombres de paquetes en (pip)
+PACKAGE_MAPPING = {
+    "mysql": "mysql-connector-python",
+    "googleapiclient": "google-api-python-client",
+    "dotenv": "python-dotenv",
+    "bs4": "beautifulsoup4",
+    "jwt": "PyJWT",
+    "yaml": "PyYAML",
+    "PIL": "Pillow"
+}
+
 
 def find_py_files(root: Path) -> Set[Path]:
     skip_dirs = {".venv", "venv", "__pycache__", "node_modules", "env"}
@@ -157,7 +168,11 @@ def main(argv: list[str] | None = None) -> int:
         print('No se encontraron paquetes externos para instalar.')
         return 0
 
-    to_install = [n for n in sorted(candidates) if not is_installed(n)]
+    to_install = []
+    for n in sorted(candidates):
+        if not is_installed(n):
+            to_install.append(PACKAGE_MAPPING.get(n, n))
+
     if not to_install:
         print('Todos los paquetes detectados ya están instalados en el entorno.')
         return 0
