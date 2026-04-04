@@ -1084,6 +1084,7 @@ def api_estructura_carpetas_public():
 def api_sincronizar_carpetas():
     """
     ✅ SINCRONIZACIÓN MEJORADA - Crea estructura de períodos con archivos Excel completos.
+    SOLO PARA MATERIAS ASIGNADAS a cada grupo.
     Estructura: Periodos_DocstrY/Período_1/Grado_6/Grupo_6-Aa/Materia_P1.xlsx
     """
     try:
@@ -1107,24 +1108,16 @@ def api_sincronizar_carpetas():
         """)
         grupos_data = cursor.fetchall()
         
-        # 3️⃣ OBTENER TODAS LAS MATERIAS
-        cursor.execute("SELECT id_materia, nombre_materia FROM materias")
-        materias_data = cursor.fetchall()
-        materias_dict = {m['id_materia']: m['nombre_materia'] for m in materias_data}
-        
-        cursor.close()
-        conn.close()
-        
-        # 4️⃣ CREAR ESTRUCTURA Y ARCHIVOS
-        PERIODOS_DIR = os.path.join(ESCRITORIO, 'Periodos_DocstrY')
-        os.makedirs(PERIODOS_DIR, exist_ok=True)
-        
         stats = {
             'carpetas_creadas': 0,
             'archivos_creados': 0,
             'archivos_totales': 0,
             'errores': []
         }
+        
+        # 4️⃣ CREAR ESTRUCTURA Y ARCHIVOS
+        PERIODOS_DIR = os.path.join(ESCRITORIO, 'Periodos_DocstrY')
+        os.makedirs(PERIODOS_DIR, exist_ok=True)
         
         for periodo in periodos:
             periodo_id = periodo['id_periodo']
@@ -1137,14 +1130,32 @@ def api_sincronizar_carpetas():
                 id_grado = grupo['id_grado']
                 id_grupo = grupo['id_grupo']
                 
-                # Crear carpeta Grado/Grupo
+                # 🔑 OBTENER SOLO LAS MATERIAS ASIGNADAS A ESTE GRUPO
+                cursor_asig = conn.cursor(dictionary=True)
+                cursor_asig.execute("""
+                    SELECT DISTINCT m.id_materia, m.nombre_materia
+                    FROM asignaciones_docente ad
+                    JOIN materias m ON ad.id_materia = m.id_materia
+                    WHERE ad.id_grupo = %s AND ad.estado = 'Activa'
+                    ORDER BY m.nombre_materia
+                """, (id_grupo,))
+                materias_asignadas = cursor_asig.fetchall()
+                cursor_asig.close()
+                
+                # Si no hay asignaciones, no crear nada para este grupo en este período
+                if not materias_asignadas:
+                    continue
+                
+                # Crear carpeta Grado/Grupo solo si hay materias asignadas
                 grado_path = os.path.join(periodo_path, f"Grado_{grado_num}")
                 grupo_path = os.path.join(grado_path, f"Grupo_{grupo_cod}")
                 os.makedirs(grupo_path, exist_ok=True)
                 stats['carpetas_creadas'] += 1
                 
-                # Crear Excel para CADA MATERIA
-                for materia_id, nombre_materia in materias_dict.items():
+                # Crear Excel SOLO para materias asignadas a este grupo
+                for materia in materias_asignadas:
+                    materia_id = materia['id_materia']
+                    nombre_materia = materia['nombre_materia']
                     materia_limpia = nombre_materia.replace(" ", "_").replace("/", "-")
                     nombre_archivo = f"{materia_limpia}_G{grado_num}_{grupo_cod}_P{numero_periodo}.xlsx"
                     ruta_archivo = os.path.join(grupo_path, nombre_archivo)
@@ -1168,11 +1179,14 @@ def api_sincronizar_carpetas():
                                 'grado': grado_num,
                                 'grupo': grupo_cod,
                                 'materia': nombre_materia,
-                                'error': str(ex)
+                                'error': str(ex)[:100]  # Limitar error a 100 chars
                             })
                     
                     stats['archivos_totales'] += 1
         
+        cursor.close()
+        conn.close()
+                
         return jsonify({
             'status': 'ok',
             'message': f'✅ Sincronización completada',
