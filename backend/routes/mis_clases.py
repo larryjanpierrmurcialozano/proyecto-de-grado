@@ -297,20 +297,29 @@ def api_clase_calificaciones(id_asignacion):
         periodo_actual = periodo_row['numero_periodo'] if periodo_row else 1
         
         cursor.execute("""
-            SELECT id_actividad, nombre_actividad, tipo_actividad, ponderacion, puntaje_maximo
-            FROM actividades
-            WHERE id_materia = %s AND id_periodo = %s AND estado = 'Activa'
-            ORDER BY fecha_creacion ASC
-        """, (asignacion['id_materia'], periodo_actual))
+            SELECT id_periodo FROM periodos WHERE numero_periodo = %s LIMIT 1
+        """, (periodo_actual,))
+        periodo_data = cursor.fetchone()
+        id_periodo = periodo_data['id_periodo'] if periodo_data else 1
+        
+        cursor.execute("""
+            SELECT a.id_actividad, a.nombre_actividad, a.tipo_actividad, a.ponderacion, a.puntaje_maximo
+            FROM actividades a
+            JOIN actividades_periodo ap ON a.id_actividad = ap.id_actividad
+            WHERE a.id_materia = %s AND ap.id_periodo = %s AND a.estado = 'Activa'
+            ORDER BY a.fecha_creacion ASC
+        """, (asignacion['id_materia'], id_periodo))
         actividades = cursor.fetchall() or []
         
         # 4. Obtener notas
         cursor.execute("""
-            SELECT id_estudiante, id_actividad, puntaje_obtenido
-            FROM notas
-            WHERE id_estudiante IN (SELECT id_estudiante FROM estudiantes WHERE id_grupo = %s)
-            AND id_actividad IN (SELECT id_actividad FROM actividades WHERE id_materia = %s AND id_periodo = %s)
-        """, (asignacion['id_grupo'], asignacion['id_materia'], periodo_actual))
+            SELECT n.id_estudiante, n.id_actividad, n.puntaje_obtenido
+            FROM notas n
+            JOIN actividades a ON n.id_actividad = a.id_actividad
+            WHERE n.id_estudiante IN (SELECT id_estudiante FROM estudiantes WHERE id_grupo = %s AND estado = 'Activo')
+            AND a.id_materia = %s
+            AND n.id_periodo = %s
+        """, (asignacion['id_grupo'], asignacion['id_materia'], id_periodo))
         notas_data = cursor.fetchall() or []
         
         # Construir mapeo de notas: {estudiante_id}_{actividad_id} -> puntaje
