@@ -1078,12 +1078,115 @@ def api_estructura_carpetas_public():
         return _error_interno(e)
 
 
+# ── FUNCIÓN AUXILIAR: Detectar cambios recientes en BD ────────
+
+def _obtener_fecha_cambios_recientes(grupo_id, materia_id, periodo_id, desde_fecha):
+    """
+    Detecta si hay cambios en la BD (notas, asistencias, estudiantes, actividades)
+    DESPUÉS de desde_fecha para este grupo/materia/período.
+    Retorna: True si hay cambios, False si no hay cambios.
+    """
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        # Convertir desde_fecha a datetime si es string
+        if isinstance(desde_fecha, str):
+            from datetime import datetime
+            desde_fecha = datetime.fromisoformat(desde_fecha)
+        elif isinstance(desde_fecha, (int, float)):
+            from datetime import datetime
+            desde_fecha = datetime.fromtimestamp(desde_fecha)
+        
+        # Consulta 1: Cambios en NOTAS para este grupo/materia/período
+        try:
+            cursor.execute("""
+                SELECT COUNT(*) as cnt
+                FROM notas n
+                JOIN actividades a ON a.id_actividad = n.id_actividad
+                WHERE a.id_grupo = %s AND a.id_materia = %s AND n.id_periodo = %s
+                AND (n.fecha_creacion > %s OR n.fecha_actualizacion > %s)
+            """, (grupo_id, materia_id, periodo_id, desde_fecha, desde_fecha))
+            result = cursor.fetchone()
+            if result and result.get('cnt', 0) > 0:
+                cursor.close()
+                conn.close()
+                return True
+        except Exception as e1:
+            print(f'[cambios] Error consultando notas: {e1}')
+        
+        # Consulta 2: Cambios en ASISTENCIAS para este grupo/período
+        try:
+            cursor.execute("""
+                SELECT COUNT(*) as cnt
+                FROM asistencias a
+                JOIN estudiantes e ON e.id_estudiante = a.id_estudiante
+                WHERE e.id_grupo = %s AND a.id_periodo = %s
+                AND (a.fecha_creacion > %s OR a.fecha_actualizacion > %s)
+            """, (grupo_id, periodo_id, desde_fecha, desde_fecha))
+            result = cursor.fetchone()
+            if result and result.get('cnt', 0) > 0:
+                cursor.close()
+                conn.close()
+                return True
+        except Exception as e2:
+            print(f'[cambios] Error consultando asistencias: {e2}')
+        
+        # Consulta 3: Cambios en ESTUDIANTES para este grupo
+        try:
+            cursor.execute("""
+                SELECT COUNT(*) as cnt
+                FROM estudiantes
+                WHERE id_grupo = %s
+                AND (fecha_creacion > %s OR fecha_actualizacion > %s)
+            """, (grupo_id, desde_fecha, desde_fecha))
+            result = cursor.fetchone()
+            if result and result.get('cnt', 0) > 0:
+                cursor.close()
+                conn.close()
+                return True
+        except Exception as e3:
+            print(f'[cambios] Error consultando estudiantes: {e3}')
+        
+        # Consulta 4: Cambios en ACTIVIDADES para este grupo/materia
+        try:
+            cursor.execute("""
+                SELECT COUNT(*) as cnt
+                FROM actividades
+                WHERE id_grupo = %s AND id_materia = %s
+                AND (fecha_creacion > %s OR fecha_actualizacion > %s)
+            """, (grupo_id, materia_id, desde_fecha, desde_fecha))
+            result = cursor.fetchone()
+            if result and result.get('cnt', 0) > 0:
+                cursor.close()
+                conn.close()
+                return True
+        except Exception as e4:
+            print(f'[cambios] Error consultando actividades: {e4}')
+        
+        cursor.close()
+        conn.close()
+        return False
+    except Exception as e:
+        print(f'[cambios] Error general: {e}')
+        try:
+            cursor.close()
+            conn.close()
+        except:
+            pass
+        return True  # Si hay error, regenerar por seguridad
+
+
 # ── 1. SINCRONIZADOR MASIVO (Desde la DB hacia el sistema local) ────────
 
 @calificaciones_bp.route('/api/calificaciones/sincronizar_carpetas', methods=['POST'])
 def api_sincronizar_carpetas():
     """
-    ✅ SINCRONIZACIÓN MEJORADA - Crea estructura de períodos con archivos Excel completos.
+    ✅ SINCRONIZACIÓN INTELIGENTE/DIFERENCIAL
+    - Si archivo NO existe: CREAR
+    - Si archivo EXISTE: VERIFICAR cambios en BD (notas, asistencias, estudiantes, actividades)
+    - Si hay cambios MÁS RECIENTES: ACTUALIZAR el archivo
+    - Si NO hay cambios: MANTENER igual (stats: sin_cambios)
+    
     SOLO PARA MATERIAS ASIGNADAS a cada grupo.
     Estructura: Periodos_DocstrY/Período_1/Grado_6/Grupo_6-Aa/Materia_P1.xlsx
     """
@@ -1111,11 +1214,13 @@ def api_sincronizar_carpetas():
         stats = {
             'carpetas_creadas': 0,
             'archivos_creados': 0,
+            'archivos_actualizados': 0,
+            'archivos_sin_cambios': 0,
             'archivos_totales': 0,
             'errores': []
         }
         
-        # 4️⃣ CREAR ESTRUCTURA Y ARCHIVOS
+        # 4️⃣ CREAR ESTRUCTURA Y ARCHIVOS (CON SINCRONIZACIÓN DIFERENCIAL)
         PERIODOS_DIR = os.path.join(ESCRITORIO, 'Periodos_DocstrY')
         os.makedirs(PERIODOS_DIR, exist_ok=True)
         
@@ -1160,10 +1265,10 @@ def api_sincronizar_carpetas():
                     nombre_archivo = f"{materia_limpia}_G{grado_num}_{grupo_cod}_P{numero_periodo}.xlsx"
                     ruta_archivo = os.path.join(grupo_path, nombre_archivo)
                     
-                    # Solo crear si NO existe
+                    # ✨ LÓGICA DIFERENCIAL ✨
                     if not os.path.exists(ruta_archivo):
+                        # CASO 1️⃣: Archivo NO existe -> CREAR
                         try:
-                            # Llamar a la función para crear el Excel
                             _crear_excel_fisico(
                                 id_grado, 
                                 id_grupo, 
@@ -1179,7 +1284,46 @@ def api_sincronizar_carpetas():
                                 'grado': grado_num,
                                 'grupo': grupo_cod,
                                 'materia': nombre_materia,
-                                'error': str(ex)[:100]  # Limitar error a 100 chars
+                                'evento': 'creacion',
+                                'error': str(ex)[:100]
+                            })
+                    else:
+                        # CASO 2️⃣: Archivo EXISTE -> Verificar cambios
+                        try:
+                            # Obtener fecha de modificación del archivo
+                            fecha_archivo = os.path.getmtime(ruta_archivo)
+                            
+                            # Detectar cambios en BD DESPUÉS de fecha_archivo
+                            hay_cambios = _obtener_fecha_cambios_recientes(
+                                id_grupo, 
+                                materia_id, 
+                                periodo_id, 
+                                fecha_archivo
+                            )
+                            
+                            if hay_cambios:
+                                # Hay cambios -> ACTUALIZAR
+                                _crear_excel_fisico(
+                                    id_grado, 
+                                    id_grupo, 
+                                    materia_id, 
+                                    periodo_id=periodo_id,
+                                    force_recreate=True,  # ⚠️ Forzar regeneración
+                                    save_path=ruta_archivo
+                                )
+                                stats['archivos_actualizados'] += 1
+                            else:
+                                # No hay cambios -> MANTENER igual
+                                stats['archivos_sin_cambios'] += 1
+                                
+                        except Exception as ex:
+                            stats['errores'].append({
+                                'periodo': numero_periodo,
+                                'grado': grado_num,
+                                'grupo': grupo_cod,
+                                'materia': nombre_materia,
+                                'evento': 'verificacion/actualizacion',
+                                'error': str(ex)[:100]
                             })
                     
                     stats['archivos_totales'] += 1
@@ -1189,9 +1333,11 @@ def api_sincronizar_carpetas():
                 
         return jsonify({
             'status': 'ok',
-            'message': f'✅ Sincronización completada',
+            'message': f'✅ Sincronización completada (Diferencial)',
             'carpetas_creadas': stats['carpetas_creadas'],
             'archivos_creados': stats['archivos_creados'],
+            'archivos_actualizados': stats['archivos_actualizados'],
+            'archivos_sin_cambios': stats['archivos_sin_cambios'],
             'archivos_totales': stats['archivos_totales'],
             'periodos': len(periodos),
             'grupos': len(grupos_data),
