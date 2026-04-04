@@ -1080,37 +1080,46 @@ def api_estructura_carpetas_public():
 
 # ── FUNCIÓN AUXILIAR: Detectar cambios recientes en BD ────────
 
-# ── FUNCIÓN AUXILIAR: Detectar cambios recientes en BD ────────
-
 def _obtener_fecha_cambios_recientes(grupo_id, materia_id, periodo_id, desde_fecha):
     """
     Detecta si hay cambios en la BD (notas, asistencias, estudiantes, actividades)
     DESPUÉS de desde_fecha para este grupo/materia/período.
     Retorna: True si hay cambios, False si no hay cambios.
     
-    ✨ ESTRATEGIA: Compara COUNT(*) de notas actual vs. guardado en .sync_control.json
-    Si el conteo cambió = hay nuevas notas = regenerar archivo
+    ✨ ESTRATEGIA: Dado que las tablas pueden no tener columnas de fecha,
+    usamos una estrategia pragmática: contar registros en notas/asistencias
+    y compararlos. Si ha cambiado el count, hay cambios.
     """
-    import json
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
     try:
-        # Ruta del archivo de control JSON
-        sync_control_file = os.path.join(ESCRITORIO, '.sync_control.json')
-        sync_data = {'última_sincronización': None, 'registros': []}
+        # Convertir desde_fecha a datetime si es string/int
+        from datetime import datetime
+        if isinstance(desde_fecha, str):
+            desde_fecha = datetime.fromisoformat(desde_fecha)
+        elif isinstance(desde_fecha, (int, float)):
+            desde_fecha = datetime.fromtimestamp(desde_fecha)
         
-        # Leer archivo de control si existe
-        if os.path.exists(sync_control_file):
+        # Almacenar timestamp en archivo de control (más fiable)
+        sync_log_file = os.path.join(ESCRITORIO, '.sync_log.txt')
+        log_key = f"{grupo_id}_{materia_id}_{periodo_id}"
+        
+        # Leer log anterior
+        log_lastcheck = {}
+        if os.path.exists(sync_log_file):
             try:
-                with open(sync_control_file, 'r', encoding='utf-8') as f:
-                    sync_data = json.load(f)
+                with open(sync_log_file, 'r') as f:
+                    for linea in f:
+                        partes = linea.strip().split('|')
+                        if len(partes) == 3:
+                            log_lastcheck[partes[0]] = float(partes[1])
             except:
-                sync_data = {'última_sincronización': None, 'registros': []}
+                pass
         
-        # Consultar COUNT(*) de notas para este grupo/materia/período
+        # Consultar NOTAS para este grupo/materia/período
         try:
             cursor.execute("""
-                SELECT COUNT(*) as cnt
+                SELECT COUNT(*) as cnt, MAX(id_nota) as max_id
                 FROM notas n
                 JOIN actividades a ON a.id_actividad = n.id_actividad
                 WHERE a.id_grupo = %s AND a.id_materia = %s AND n.id_periodo = %s
@@ -1118,36 +1127,29 @@ def _obtener_fecha_cambios_recientes(grupo_id, materia_id, periodo_id, desde_fec
             result = cursor.fetchone()
             notas_count = result.get('cnt', 0) if result else 0
             
-            # Buscar registro anterior de este grupo/materia/período
-            registro_clave = f"{grupo_id}_{materia_id}_{periodo_id}"
-            registro_anterior = None
+            # Comparar con último count
+            if log_key in log_lastcheck:
+                old_count = int(log_lastcheck[log_key])
+                if notas_count != old_count:
+                    cursor.close()
+                    conn.close()
+                    print(f'[cambios] Detectado cambio: notas_count {old_count} → {notas_count}')
+                    return True
             
-            for reg in sync_data.get('registros', []):
-                if reg.get('clave') == registro_clave:
-                    registro_anterior = reg
-                    break
-            
-            # La primera vez siempre retorna True (crear archivo)
-            if registro_anterior is None:
+            # La primera vez siempre retorna True (crear)
+            if log_key not in log_lastcheck:
                 cursor.close()
                 conn.close()
                 return True
-            
-            # Comparar conteo: si cambió, hay actualizaciones
-            old_count = registro_anterior.get('conteo_notas', 0)
-            if notas_count != old_count:
-                cursor.close()
-                conn.close()
-                return True
-            
-            # Conteo igual = sin cambios
-            cursor.close()
-            conn.close()
-            return False
                 
         except Exception as e1:
             print(f'[cambios] Error consultando notas: {e1}')
             return True  # Si hay error, regenerar por seguridad
+        
+        # Si llegamos aquí: archivo existe, notas no cambiaron
+        cursor.close()
+        conn.close()
+        return False
         
     except Exception as e:
         print(f'[cambios] Error general: {e}')
@@ -1161,73 +1163,35 @@ def _obtener_fecha_cambios_recientes(grupo_id, materia_id, periodo_id, desde_fec
 
 def _actualizar_sync_log(grupo_id, materia_id, periodo_id):
     """
-    Actualiza el archivo .sync_control.json con el estado actual.
-    Guarda en formato JSON legible para cualquiera.
+    Actualiza el archivo de control .sync_log.txt con el tiempo actual
+    para este grupo/materia/período.
     """
-    import json
-    from datetime import datetime
-    
     try:
-        sync_control_file = os.path.join(ESCRITORIO, '.sync_control.json')
+        from datetime import datetime
+        sync_log_file = os.path.join(ESCRITORIO, '.sync_log.txt')
+        log_key = f"{grupo_id}_{materia_id}_{periodo_id}"
+        current_time = datetime.now().timestamp()
         
-        # Leer datos actuales (si existe)
-        sync_data = {'última_sincronización': None, 'registros': []}
-        if os.path.exists(sync_control_file):
+        # Leer log actual
+        log_data = {}
+        if os.path.exists(sync_log_file):
             try:
-                with open(sync_control_file, 'r', encoding='utf-8') as f:
-                    sync_data = json.load(f)
+                with open(sync_log_file, 'r') as f:
+                    for linea in f:
+                        partes = linea.strip().split('|')
+                        if len(partes) == 3:
+                            log_data[partes[0]] = partes[1]
             except:
                 pass
         
-        # Obtener conteo actual de notas para este grupo/materia/período
-        conn = get_db()
-        cursor = conn.cursor(dictionary=True)
-        try:
-            cursor.execute("""
-                SELECT COUNT(*) as cnt
-                FROM notas n
-                JOIN actividades a ON a.id_actividad = n.id_actividad
-                WHERE a.id_grupo = %s AND a.id_materia = %s AND n.id_periodo = %s
-            """, (grupo_id, materia_id, periodo_id))
-            result = cursor.fetchone()
-            notas_count = result.get('cnt', 0) if result else 0
-        except:
-            notas_count = 0
-        finally:
-            cursor.close()
-            conn.close()
+        # Actualizar entrada
+        log_data[log_key] = str(current_time)
         
-        # Crear/actualizar registro para este grupo/materia/período
-        registro_clave = f"{grupo_id}_{materia_id}_{periodo_id}"
-        registro_encontrado = False
-        
-        for reg in sync_data.get('registros', []):
-            if reg.get('clave') == registro_clave:
-                reg['conteo_notas'] = notas_count
-                reg['última_actualización'] = datetime.now().isoformat()
-                registro_encontrado = True
-                break
-        
-        if not registro_encontrado:
-            # Crear nuevo registro
-            nuevo_registro = {
-                'clave': registro_clave,
-                'grupo_id': grupo_id,
-                'materia_id': materia_id,
-                'periodo_id': periodo_id,
-                'conteo_notas': notas_count,
-                'última_actualización': datetime.now().isoformat(),
-                'descripción': f'Grado-{grupo_id} | Materia-{materia_id} | Período-{periodo_id}'
-            }
-            sync_data['registros'].append(nuevo_registro)
-        
-        # Actualizar timestamp global
-        sync_data['última_sincronización'] = datetime.now().isoformat()
-        
-        # Escribir JSON legible
-        with open(sync_control_file, 'w', encoding='utf-8') as f:
-            json.dump(sync_data, f, indent=2, ensure_ascii=False)
-            
+        # Escribir log
+        with open(sync_log_file, 'w') as f:
+            for key, val in log_data.items():
+                f.write(f"{key}|{val}|{datetime.fromtimestamp(float(val)).isoformat()}\n")
+                
     except Exception as e:
         print(f'[sync_log] Error actualizando log: {e}')
 
