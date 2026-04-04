@@ -44,6 +44,7 @@ const MisClasesModule = {
         document.getElementById('btn-guardar-todo-mis')?.addEventListener('click', () => this.guardarTodo());
         document.getElementById('btn-abrir-linea-mis')?.addEventListener('click', () => this.cargarTabla());
         document.getElementById('btn-descargar-mis')?.addEventListener('click', () => this.descargarExcel());
+        document.getElementById('btn-sincronizar-mis')?.addEventListener('click', () => this.sincronizarCarpetas());
 
         document.getElementById('mc-filtro-grado')?.addEventListener('change', (e) => this.cambiarGrado(e.target.value));
         document.getElementById('mc-filtro-grupo')?.addEventListener('change', (e) => this.cambiarGrupo(e.target.value));
@@ -79,6 +80,7 @@ const MisClasesModule = {
 
             this.renderSelectGrados();
             this.renderSelectPeriodos();
+            this.actualizarBotones();
         } catch (error) {
             mostrarAlerta('Error cargando filtros de mis clases', 'error');
         }
@@ -140,11 +142,23 @@ const MisClasesModule = {
     cambiarMateria(idMateria) {
         this.filtros.materia = idMateria;
         this.limpiarUI();
+        this.actualizarBotones();
     },
 
     cambiarPeriodo(idPeriodo) {
         this.filtros.periodo = idPeriodo;
         this.limpiarUI();
+        this.actualizarBotones();
+    },
+
+    actualizarBotones() {
+        const btnAbrir = document.getElementById('btn-abrir-linea-mis');
+        const btnDescargar = document.getElementById('btn-descargar-mis');
+        
+        const puedeEditar = this.filtros.grado && this.filtros.grupo && this.filtros.materia && this.filtros.periodo;
+        
+        if (btnAbrir) btnAbrir.disabled = !puedeEditar;
+        if (btnDescargar) btnDescargar.disabled = !puedeEditar;
     },
 
     limpiarUI() {
@@ -160,16 +174,17 @@ const MisClasesModule = {
     },
 
     async cargarTabla() {
-        if (!this.filtros.materia || !this.filtros.periodo) {
+        if (!this.filtros.materia || !this.filtros.periodo || !this.filtros.grupo) {
             mostrarAlerta('Debes seleccionar Grado, Grupo, Materia y Período', 'warning');
             return;
         }
 
         try {
-            // Buscar la asignación del docente
+            // Buscar la asignación del docente por grupo, materia y grado
             const clase = this.clasesDocente.find(c => 
                 c.id_materia == this.filtros.materia && 
-                (!this.filtros.grupo || c.grupo === this.filtros.grupo)
+                c.grupo === this.filtros.grupo &&
+                c.grado === this.filtros.grado
             );
 
             if (!clase) {
@@ -408,13 +423,21 @@ const MisClasesModule = {
     },
 
     async descargarExcel() {
-        if (!this.filtros.materia) {
+        if (!this.filtros.materia || !this.filtros.grupo) {
             mostrarAlerta('Selecciona una materia primero', 'warning');
             return;
         }
 
-        const clase = this.clasesDocente.find(c => c.id_materia == this.filtros.materia);
-        if (!clase) return;
+        const clase = this.clasesDocente.find(c => 
+            c.id_materia == this.filtros.materia && 
+            c.grupo === this.filtros.grupo &&
+            c.grado === this.filtros.grado
+        );
+        
+        if (!clase) {
+            mostrarAlerta('No encontramos esa clase', 'error');
+            return;
+        }
 
         try {
             const url = `/api/mis_clases/${clase.id_asignacion}/descargar-excel?periodo=${this.filtros.periodo}`;
@@ -432,9 +455,32 @@ const MisClasesModule = {
             window.URL.revokeObjectURL(downloadUrl);
             document.body.removeChild(a);
 
-            mostrarAlerta('✅ Descargado', 'success');
+            mostrarAlerta('✅ Descargado correctamente', 'success');
         } catch (error) {
-            mostrarAlerta('Error al descargar', 'error');
+            console.error('Error descargando:', error);
+            mostrarAlerta('Error al descargar el archivo', 'error');
+        }
+    },
+
+    async sincronizarCarpetas() {
+        const btn = document.getElementById('btn-sincronizar-mis');
+        const textoOriginal = btn.innerHTML;
+        
+        try {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
+
+            const res = await API.request('/api/mis_clases/sincronizar-carpetas', {
+                method: 'POST'
+            });
+
+            mostrarAlerta(`✅ ${res.message} - Archivos: ${res.archivos}`, 'success');
+        } catch (error) {
+            console.error('Error sincronizando:', error);
+            mostrarAlerta('Error al sincronizar carpetas', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = textoOriginal;
         }
     }
 };

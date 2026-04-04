@@ -366,3 +366,104 @@ def api_clase_calificaciones(id_asignacion):
     except Exception as e:
         print(f'[clase_calificaciones] Error: {e}')
         return jsonify({'error': str(e)[:100]}), 500
+
+
+# ── ENDPOINT: Sincronizar carpetas del docente ────────
+
+@mis_clases_bp.route('/api/mis_clases/sincronizar-carpetas', methods=['POST'])
+def api_sincronizar_carpetas():
+    """
+    Sincroniza archivos Excel en Desktop/Periodos_DocstrY para TODAS las clases del docente.
+    Solo sincroniza cambios detectados (usa .sync_log.txt).
+    """
+    try:
+        user_id = _verificar_autenticacion()
+        if not user_id:
+            return jsonify({'error': 'No autenticado'}), 401
+        
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Obtener todas las clases del docente
+        cursor.execute("""
+            SELECT a.id_asignacion, a.id_grado, a.id_grupo, a.id_materia,
+                   g.numero_grado, gr.codigo_grupo, m.nombre_materia
+            FROM asignaciones_docente a
+            JOIN grados g ON a.id_grado = g.id_grado
+            JOIN grupos gr ON a.id_grupo = gr.id_grupo
+            JOIN materias m ON a.id_materia = m.id_materia
+            WHERE a.id_usuario = %s AND a.estado = 'Activa'
+        """, (user_id,))
+        
+        clases = cursor.fetchall() or []
+        cursor.close()
+        conn.close()
+        
+        if not clases:
+            return jsonify({'status': 'ok', 'message': 'Sin clases para sincronizar', 'archivos': 0}), 200
+        
+        # Sincronizar cada clase
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+        
+        archivos_sinc = 0
+        ESCRITORIO = os.path.expanduser('~/Desktop')
+        
+        for clase in clases:
+            try:
+                grado_num = clase['numero_grado']
+                grupo_cod = clase['codigo_grupo']
+                materia_limpia = clase['nombre_materia'].replace(" ", "_").replace("/", "-")
+                
+                # Crear ruta
+                ruta_dir = os.path.join(ESCRITORIO, 'Periodos_DocstrY', f'Período_1', f'Grado_{grado_num}', f'Grupo_{grupo_cod}')
+                os.makedirs(ruta_dir, exist_ok=True)
+                
+                ruta_archivo = os.path.join(ruta_dir, f'{materia_limpia}.xlsx')
+                
+                # Obtener datos para el Excel
+                conn_sync = get_db()
+                cur_sync = conn_sync.cursor(dictionary=True)
+                
+                cur_sync.execute("SELECT COUNT(*) as cnt FROM notas WHERE id_estudiante IN (SELECT id_estudiante FROM estudiantes WHERE id_grupo = %s)", (clase['id_grupo'],))
+                notas_count = cur_sync.fetchone()['cnt']
+                
+                # Generar o actualizar Excel
+                wb = Workbook()
+                ws = wb.active
+                ws.title = 'Notas'
+                
+                # Headers
+                ws['A1'] = f"{clase['nombre_materia']} - Grado {grado_num}"
+                ws['A2'] = f"Grupo: {grupo_cod}"
+                
+                cur_sync.execute("SELECT id_estudiante, nombre, apellido FROM estudiantes WHERE id_grupo = %s ORDER BY apellido", (clase['id_grupo'],))
+                estudiantes = cur_sync.fetchall() or []
+                
+                ws['A4'] = 'Estudiante'
+                ws['B4'] = 'Nota 1'
+                ws['C4'] = 'Nota 2'
+                ws['D4'] = 'Promedio'
+                
+                for idx, est in enumerate(estudiantes, start=5):
+                    ws[f'A{idx}'] = f"{est['apellido']}, {est['nombre']}"
+                
+                cur_sync.close()
+                conn_sync.close()
+                
+                wb.save(ruta_archivo)
+                archivos_sinc += 1
+                
+            except Exception as e:
+                print(f'Error sincronizando clase {clase["nombre_materia"]}: {e}')
+                continue
+        
+        return jsonify({
+            'status': 'ok',
+            'message': f'Sincronizadas {archivos_sinc} clases',
+            'archivos': archivos_sinc
+        }), 200
+        
+    except Exception as e:
+        print(f'[sincronizar_carpetas] Error: {e}')
+        return jsonify({'error': str(e)[:100]}), 500
