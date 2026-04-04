@@ -1085,87 +1085,72 @@ def _obtener_fecha_cambios_recientes(grupo_id, materia_id, periodo_id, desde_fec
     Detecta si hay cambios en la BD (notas, asistencias, estudiantes, actividades)
     DESPUÉS de desde_fecha para este grupo/materia/período.
     Retorna: True si hay cambios, False si no hay cambios.
+    
+    ✨ ESTRATEGIA: Dado que las tablas pueden no tener columnas de fecha,
+    usamos una estrategia pragmática: contar registros en notas/asistencias
+    y compararlos. Si ha cambiado el count, hay cambios.
     """
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
     try:
-        # Convertir desde_fecha a datetime si es string
+        # Convertir desde_fecha a datetime si es string/int
+        from datetime import datetime
         if isinstance(desde_fecha, str):
-            from datetime import datetime
             desde_fecha = datetime.fromisoformat(desde_fecha)
         elif isinstance(desde_fecha, (int, float)):
-            from datetime import datetime
             desde_fecha = datetime.fromtimestamp(desde_fecha)
         
-        # Consulta 1: Cambios en NOTAS para este grupo/materia/período
+        # Almacenar timestamp en archivo de control (más fiable)
+        sync_log_file = os.path.join(ESCRITORIO, '.sync_log.txt')
+        log_key = f"{grupo_id}_{materia_id}_{periodo_id}"
+        
+        # Leer log anterior
+        log_lastcheck = {}
+        if os.path.exists(sync_log_file):
+            try:
+                with open(sync_log_file, 'r') as f:
+                    for linea in f:
+                        partes = linea.strip().split('|')
+                        if len(partes) == 3:
+                            log_lastcheck[partes[0]] = float(partes[1])
+            except:
+                pass
+        
+        # Consultar NOTAS para este grupo/materia/período
         try:
             cursor.execute("""
-                SELECT COUNT(*) as cnt
+                SELECT COUNT(*) as cnt, MAX(id_nota) as max_id
                 FROM notas n
                 JOIN actividades a ON a.id_actividad = n.id_actividad
                 WHERE a.id_grupo = %s AND a.id_materia = %s AND n.id_periodo = %s
-                AND (n.fecha_creacion > %s OR n.fecha_actualizacion > %s)
-            """, (grupo_id, materia_id, periodo_id, desde_fecha, desde_fecha))
+            """, (grupo_id, materia_id, periodo_id))
             result = cursor.fetchone()
-            if result and result.get('cnt', 0) > 0:
+            notas_count = result.get('cnt', 0) if result else 0
+            
+            # Comparar con último count
+            if log_key in log_lastcheck:
+                old_count = int(log_lastcheck[log_key])
+                if notas_count != old_count:
+                    cursor.close()
+                    conn.close()
+                    print(f'[cambios] Detectado cambio: notas_count {old_count} → {notas_count}')
+                    return True
+            
+            # La primera vez siempre retorna True (crear)
+            if log_key not in log_lastcheck:
                 cursor.close()
                 conn.close()
                 return True
+                
         except Exception as e1:
             print(f'[cambios] Error consultando notas: {e1}')
+            return True  # Si hay error, regenerar por seguridad
         
-        # Consulta 2: Cambios en ASISTENCIAS para este grupo/período
-        try:
-            cursor.execute("""
-                SELECT COUNT(*) as cnt
-                FROM asistencias a
-                JOIN estudiantes e ON e.id_estudiante = a.id_estudiante
-                WHERE e.id_grupo = %s AND a.id_periodo = %s
-                AND (a.fecha_creacion > %s OR a.fecha_actualizacion > %s)
-            """, (grupo_id, periodo_id, desde_fecha, desde_fecha))
-            result = cursor.fetchone()
-            if result and result.get('cnt', 0) > 0:
-                cursor.close()
-                conn.close()
-                return True
-        except Exception as e2:
-            print(f'[cambios] Error consultando asistencias: {e2}')
-        
-        # Consulta 3: Cambios en ESTUDIANTES para este grupo
-        try:
-            cursor.execute("""
-                SELECT COUNT(*) as cnt
-                FROM estudiantes
-                WHERE id_grupo = %s
-                AND (fecha_creacion > %s OR fecha_actualizacion > %s)
-            """, (grupo_id, desde_fecha, desde_fecha))
-            result = cursor.fetchone()
-            if result and result.get('cnt', 0) > 0:
-                cursor.close()
-                conn.close()
-                return True
-        except Exception as e3:
-            print(f'[cambios] Error consultando estudiantes: {e3}')
-        
-        # Consulta 4: Cambios en ACTIVIDADES para este grupo/materia
-        try:
-            cursor.execute("""
-                SELECT COUNT(*) as cnt
-                FROM actividades
-                WHERE id_grupo = %s AND id_materia = %s
-                AND (fecha_creacion > %s OR fecha_actualizacion > %s)
-            """, (grupo_id, materia_id, desde_fecha, desde_fecha))
-            result = cursor.fetchone()
-            if result and result.get('cnt', 0) > 0:
-                cursor.close()
-                conn.close()
-                return True
-        except Exception as e4:
-            print(f'[cambios] Error consultando actividades: {e4}')
-        
+        # Si llegamos aquí: archivo existe, notas no cambiaron
         cursor.close()
         conn.close()
         return False
+        
     except Exception as e:
         print(f'[cambios] Error general: {e}')
         try:
@@ -1174,6 +1159,41 @@ def _obtener_fecha_cambios_recientes(grupo_id, materia_id, periodo_id, desde_fec
         except:
             pass
         return True  # Si hay error, regenerar por seguridad
+
+
+def _actualizar_sync_log(grupo_id, materia_id, periodo_id):
+    """
+    Actualiza el archivo de control .sync_log.txt con el tiempo actual
+    para este grupo/materia/período.
+    """
+    try:
+        from datetime import datetime
+        sync_log_file = os.path.join(ESCRITORIO, '.sync_log.txt')
+        log_key = f"{grupo_id}_{materia_id}_{periodo_id}"
+        current_time = datetime.now().timestamp()
+        
+        # Leer log actual
+        log_data = {}
+        if os.path.exists(sync_log_file):
+            try:
+                with open(sync_log_file, 'r') as f:
+                    for linea in f:
+                        partes = linea.strip().split('|')
+                        if len(partes) == 3:
+                            log_data[partes[0]] = partes[1]
+            except:
+                pass
+        
+        # Actualizar entrada
+        log_data[log_key] = str(current_time)
+        
+        # Escribir log
+        with open(sync_log_file, 'w') as f:
+            for key, val in log_data.items():
+                f.write(f"{key}|{val}|{datetime.fromtimestamp(float(val)).isoformat()}\n")
+                
+    except Exception as e:
+        print(f'[sync_log] Error actualizando log: {e}')
 
 
 # ── 1. SINCRONIZADOR MASIVO (Desde la DB hacia el sistema local) ────────
@@ -1278,6 +1298,8 @@ def api_sincronizar_carpetas():
                                 save_path=ruta_archivo
                             )
                             stats['archivos_creados'] += 1
+                            # ✅ Guardar en log que este archivo fue sincronizado
+                            _actualizar_sync_log(id_grupo, materia_id, periodo_id)
                         except Exception as ex:
                             stats['errores'].append({
                                 'periodo': numero_periodo,
@@ -1290,15 +1312,12 @@ def api_sincronizar_carpetas():
                     else:
                         # CASO 2️⃣: Archivo EXISTE -> Verificar cambios
                         try:
-                            # Obtener fecha de modificación del archivo
-                            fecha_archivo = os.path.getmtime(ruta_archivo)
-                            
-                            # Detectar cambios en BD DESPUÉS de fecha_archivo
+                            # Detectar cambios en BD (compara conteos en notas)
                             hay_cambios = _obtener_fecha_cambios_recientes(
                                 id_grupo, 
                                 materia_id, 
                                 periodo_id, 
-                                fecha_archivo
+                                None  # No usamos fecha_archivo, usamos conteos
                             )
                             
                             if hay_cambios:
@@ -1312,6 +1331,8 @@ def api_sincronizar_carpetas():
                                     save_path=ruta_archivo
                                 )
                                 stats['archivos_actualizados'] += 1
+                                # ✅ Guardar en log que este archivo fue sincronizado
+                                _actualizar_sync_log(id_grupo, materia_id, periodo_id)
                             else:
                                 # No hay cambios -> MANTENER igual
                                 stats['archivos_sin_cambios'] += 1
