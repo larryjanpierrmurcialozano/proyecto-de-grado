@@ -1083,114 +1083,105 @@ def api_estructura_carpetas_public():
 @calificaciones_bp.route('/api/calificaciones/sincronizar_carpetas', methods=['POST'])
 def api_sincronizar_carpetas():
     """
-    Crea la estructura de carpetas para todos los grados y grupos que existan en el sistema.
-    Ahora también crea la estructura por períodos: /uploads/periodos/periodo_1/Grado_X/Grupo_Y/
+    ✅ SINCRONIZACIÓN MEJORADA - Crea estructura de períodos con archivos Excel completos.
+    Estructura: Periodos_DocstrY/Período_1/Grado_6/Grupo_6-Aa/Materia_P1.xlsx
     """
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
         
-        # 1️⃣ OBTENER TODOS LOS PERÍODOS
+        # 1️⃣ OBTENER PERÍODOS
         cursor.execute("SELECT id_periodo, numero_periodo FROM periodos ORDER BY numero_periodo")
         periodos = cursor.fetchall()
-        
         if not periodos:
             cursor.close()
             conn.close()
-            return jsonify({'error': 'No hay períodos en el sistema'}), 400
+            return jsonify({'error': 'No hay períodos definidos'}), 400
         
-        # 2️⃣ OBTENER TODOS LOS GRUPOS
+        # 2️⃣ OBTENER GRUPOS CON SUS GRADOS
         cursor.execute("""
-            SELECT g.numero_grado, gr.codigo_grupo, g.id_grado, gr.id_grupo 
+            SELECT g.id_grado, g.numero_grado, gr.id_grupo, gr.codigo_grupo
             FROM grupos gr
             JOIN grados g ON gr.id_grado = g.id_grado
+            ORDER BY g.numero_grado, gr.codigo_grupo
         """)
-        todos_los_grupos = cursor.fetchall()
+        grupos_data = cursor.fetchall()
         
-        # 3️⃣ CREAR ESTRUCTURA POR PERÍODO
+        # 3️⃣ OBTENER TODAS LAS MATERIAS
+        cursor.execute("SELECT id_materia, nombre_materia FROM materias")
+        materias_data = cursor.fetchall()
+        materias_dict = {m['id_materia']: m['nombre_materia'] for m in materias_data}
+        
+        cursor.close()
+        conn.close()
+        
+        # 4️⃣ CREAR ESTRUCTURA Y ARCHIVOS
         PERIODOS_DIR = os.path.join(ESCRITORIO, 'Periodos_DocstrY')
         os.makedirs(PERIODOS_DIR, exist_ok=True)
         
-        carpetas_creadas = 0
-        archivos_creados = 0
-        created_files = []
-        errors = []
+        stats = {
+            'carpetas_creadas': 0,
+            'archivos_creados': 0,
+            'archivos_totales': 0,
+            'errores': []
+        }
         
         for periodo in periodos:
             periodo_id = periodo['id_periodo']
             numero_periodo = periodo['numero_periodo']
-            periodo_folder = os.path.join(PERIODOS_DIR, f"Período_{numero_periodo}")
-            os.makedirs(periodo_folder, exist_ok=True)
+            periodo_path = os.path.join(PERIODOS_DIR, f"Período_{numero_periodo}")
             
-            # Crear estructura Grado/Grupo dentro de cada período
-            for grupo in todos_los_grupos:
+            for grupo in grupos_data:
                 grado_num = grupo['numero_grado']
                 grupo_cod = grupo['codigo_grupo']
                 id_grado = grupo['id_grado']
                 id_grupo = grupo['id_grupo']
                 
-                ruta_grupo = os.path.join(periodo_folder, f"Grado_{grado_num}", f"Grupo_{grupo_cod}")
-                if not os.path.exists(ruta_grupo):
-                    os.makedirs(ruta_grupo, exist_ok=True)
-                    carpetas_creadas += 1
+                # Crear carpeta Grado/Grupo
+                grado_path = os.path.join(periodo_path, f"Grado_{grado_num}")
+                grupo_path = os.path.join(grado_path, f"Grupo_{grupo_cod}")
+                os.makedirs(grupo_path, exist_ok=True)
+                stats['carpetas_creadas'] += 1
                 
-                # Obtener asignaciones para este grupo en este período
-                cursor.execute("""
-                    SELECT DISTINCT id_materia FROM asignaciones_docente 
-                    WHERE id_grupo = %s AND estado = 'Activa'
-                """, (id_grupo,))
-                asignaciones = cursor.fetchall()
-                
-                # Si no hay asignaciones, crear para todas las materias
-                if not asignaciones:
-                    cursor.execute("SELECT id_materia FROM materias")
-                    asignaciones = cursor.fetchall()
-                
-                # Crear Excel para cada materia en este período
-                for asig in asignaciones:
-                    # Obtener nombre de materia para el nombre del archivo
-                    cursor.execute("SELECT nombre_materia FROM materias WHERE id_materia = %s", (asig['id_materia'],))
-                    mat_row = cursor.fetchone()
-                    nombre_materia = mat_row['nombre_materia'] if mat_row else f"Materia_{asig['id_materia']}"
+                # Crear Excel para CADA MATERIA
+                for materia_id, nombre_materia in materias_dict.items():
                     materia_limpia = nombre_materia.replace(" ", "_").replace("/", "-")
-                    
                     nombre_archivo = f"{materia_limpia}_G{grado_num}_{grupo_cod}_P{numero_periodo}.xlsx"
-                    ruta_archivo = os.path.join(ruta_grupo, nombre_archivo)
+                    ruta_archivo = os.path.join(grupo_path, nombre_archivo)
                     
-                    try:
-                        # Solo crear si no existe
-                        if not os.path.exists(ruta_archivo):
-                            _crear_excel_fisico(id_grado, id_grupo, asig['id_materia'], 
-                                              periodo_id=periodo_id,
-                                              force_recreate=True,
-                                              save_path=ruta_archivo)
-                            archivos_creados += 1
-                            created_files.append(ruta_archivo)
-                    except Exception as ex:
-                        errors.append({
-                            'periodo': numero_periodo,
-                            'grado': grado_num,
-                            'grupo': grupo_cod,
-                            'materia_id': asig['id_materia'],
-                            'error': str(ex)
-                        })
+                    # Solo crear si NO existe
+                    if not os.path.exists(ruta_archivo):
+                        try:
+                            # Llamar a la función para crear el Excel
+                            _crear_excel_fisico(
+                                id_grado, 
+                                id_grupo, 
+                                materia_id, 
+                                periodo_id=periodo_id,
+                                force_recreate=False,
+                                save_path=ruta_archivo
+                            )
+                            stats['archivos_creados'] += 1
+                        except Exception as ex:
+                            stats['errores'].append({
+                                'periodo': numero_periodo,
+                                'grado': grado_num,
+                                'grupo': grupo_cod,
+                                'materia': nombre_materia,
+                                'error': str(ex)
+                            })
+                    
+                    stats['archivos_totales'] += 1
         
-        # También crear estructura antigua para compatibilidad
-        for grupo in todos_los_grupos:
-            ruta = os.path.join(PLANILLAS_DIR, f"Grado_{grupo['numero_grado']}", f"Grupo_{grupo['codigo_grupo']}")
-            if not os.path.exists(ruta):
-                os.makedirs(ruta, exist_ok=True)
-        
-        cursor.close()
-        conn.close()
-                
         return jsonify({
             'status': 'ok',
-            'message': f'✅ Sincronización completa. {carpetas_creadas} carpetas de período creadas.',
-            'archivos_creados': archivos_creados,
-            'periodos_procesados': len(periodos),
-            'created_files': created_files[:10],  # Mostrar primeros 10
-            'errors': errors
+            'message': f'✅ Sincronización completada',
+            'carpetas_creadas': stats['carpetas_creadas'],
+            'archivos_creados': stats['archivos_creados'],
+            'archivos_totales': stats['archivos_totales'],
+            'periodos': len(periodos),
+            'grupos': len(grupos_data),
+            'errores': stats['errores'][:5]  # Mostrar primeros 5 errores
         }), 200
 
     except Exception as e:
