@@ -420,5 +420,21 @@ const API = {
     // ═══════════════════════════════════════════════════════════════════
     async getRoles() {
         return this.request('/api/roles');
+    },
+
+    // ═══════════════════════════════════════════════════════════════════
+    // MIS CLASES (Portal personal del docente)
+    // ═══════════════════════════════════════════════════════════════════
+    async getMisClases() {
+        return this.request('/api/mis_clases');
+    },
+
+    async getClaseDetalle(asignacionId) {
+        return this.request(`/api/mis_clases/${asignacionId}`);
+    },
+
+    async descargarExcelClase(asignacionId, periodo = 1) {
+        // Este método devuelve directamente la URL para descargar
+        return `/api/mis_clases/${asignacionId}/descargar-excel?periodo=${periodo}`;
     }
 };
