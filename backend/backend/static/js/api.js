@@ -294,6 +294,25 @@ const API = {
     },
 
     // ═══════════════════════════════════════════════════════════════════
+    // DESCARGAS POR PERÍODO (FASE 2)
+    // ═══════════════════════════════════════════════════════════════════
+    async listarArchivosPeriodo(periodoId) {
+        return this.request(`/api/calificaciones/periodos/${periodoId}/listar`);
+    },
+
+    async descargarArchivoPeriodo(periodoId, rutaRelativa) {
+        const url = `/api/calificaciones/periodos/descargar_archivo?periodo_id=${periodoId}&ruta=${encodeURIComponent(rutaRelativa)}`;
+        window.location.href = url;
+        return { status: 'ok', message: 'Descarga iniciada' };
+    },
+
+    async descargarZipPeriodo(periodoId) {
+        const url = `/api/calificaciones/periodos/${periodoId}/descargar_zip`;
+        window.location.href = url;
+        return { status: 'ok', message: 'Descarga de ZIP iniciada' };
+    },
+
+    // ═══════════════════════════════════════════════════════════════════
     // ASISTENCIA
     // ═══════════════════════════════════════════════════════════════════
     async getAsistencia(grupoId = null, fecha = null) {

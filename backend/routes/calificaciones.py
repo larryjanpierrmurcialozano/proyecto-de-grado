@@ -835,7 +835,7 @@ def api_generar_plantilla_desde_base():
     except Exception as e:
         return _error_interno(e)
 
-def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recreate=False):
+def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recreate=False, save_path=None):
     """Función interna para crear un archivo Excel si no existe o se requiere forzar con notas y fórmulas"""
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
@@ -934,18 +934,24 @@ def _crear_excel_fisico(grado_id, grupo_id, materia_id, periodo_id=1, force_recr
     cursor.close(); conn.close()
 
     # 5. Preparar la ruta
-    nombre_carpeta_grado = f"Grado_{info.get('numero_grado', grado_id)}"
-    nombre_carpeta_grupo = f"Grupo_{info.get('codigo_grupo', grupo_id)}"
-    ruta_directorio = os.path.join(PLANILLAS_DIR, nombre_carpeta_grado, nombre_carpeta_grupo)
-    os.makedirs(ruta_directorio, exist_ok=True) 
-    
-    numero_grado = str(info.get('numero_grado') or f"Gr{grado_id}")
-    codigo_grupo = str(info.get('codigo_grupo') or f"G{grupo_id}")
-    nombre_materia = str(info.get('nombre_materia') or f"Materia_{materia_id}")
+    if save_path:
+        # Si se proporciona una ruta personalizada, usarla directamente
+        ruta_archivo = save_path
+        os.makedirs(os.path.dirname(ruta_archivo), exist_ok=True)
+    else:
+        # Usar la estructura estándar de PLANILLAS_DIR
+        nombre_carpeta_grado = f"Grado_{info.get('numero_grado', grado_id)}"
+        nombre_carpeta_grupo = f"Grupo_{info.get('codigo_grupo', grupo_id)}"
+        ruta_directorio = os.path.join(PLANILLAS_DIR, nombre_carpeta_grado, nombre_carpeta_grupo)
+        os.makedirs(ruta_directorio, exist_ok=True)
+        
+        numero_grado = str(info.get('numero_grado') or f"Gr{grado_id}")
+        codigo_grupo = str(info.get('codigo_grupo') or f"G{grupo_id}")
+        nombre_materia = str(info.get('nombre_materia') or f"Materia_{materia_id}")
 
-    materia_limpia = nombre_materia.replace(" ", "_").replace("/", "-")
-    nombre_archivo = f"{materia_limpia}_G{numero_grado}_{codigo_grupo}_P{periodo_id}.xlsx"
-    ruta_archivo = os.path.join(ruta_directorio, nombre_archivo)
+        materia_limpia = nombre_materia.replace(" ", "_").replace("/", "-")
+        nombre_archivo = f"{materia_limpia}_G{numero_grado}_{codigo_grupo}_P{periodo_id}.xlsx"
+        ruta_archivo = os.path.join(ruta_directorio, nombre_archivo)
 
     # 6. Crear o actualizar Excel (forzado si force_recreate=True)
     if os.path.exists(ruta_archivo) and not force_recreate:
@@ -1078,88 +1084,112 @@ def api_estructura_carpetas_public():
 def api_sincronizar_carpetas():
     """
     Crea la estructura de carpetas para todos los grados y grupos que existan en el sistema.
-    Luego genera los Excel únicamente para las materias asignadas.
+    Ahora también crea la estructura por períodos: /uploads/periodos/periodo_1/Grado_X/Grupo_Y/
     """
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
         
-        # 1. Crear carpetas para absolutamente todos los Grados y Grupos existentes
+        # 1️⃣ OBTENER TODOS LOS PERÍODOS
+        cursor.execute("SELECT id_periodo, numero_periodo FROM periodos ORDER BY numero_periodo")
+        periodos = cursor.fetchall()
+        
+        if not periodos:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'No hay períodos en el sistema'}), 400
+        
+        # 2️⃣ OBTENER TODOS LOS GRUPOS
         cursor.execute("""
-            SELECT g.numero_grado, gr.codigo_grupo 
+            SELECT g.numero_grado, gr.codigo_grupo, g.id_grado, gr.id_grupo 
             FROM grupos gr
             JOIN grados g ON gr.id_grado = g.id_grado
         """)
         todos_los_grupos = cursor.fetchall()
         
+        # 3️⃣ CREAR ESTRUCTURA POR PERÍODO
+        PERIODOS_DIR = os.path.join(ESCRITORIO, 'Periodos_DocstrY')
+        os.makedirs(PERIODOS_DIR, exist_ok=True)
+        
         carpetas_creadas = 0
+        archivos_creados = 0
+        created_files = []
+        errors = []
+        
+        for periodo in periodos:
+            periodo_id = periodo['id_periodo']
+            numero_periodo = periodo['numero_periodo']
+            periodo_folder = os.path.join(PERIODOS_DIR, f"Período_{numero_periodo}")
+            os.makedirs(periodo_folder, exist_ok=True)
+            
+            # Crear estructura Grado/Grupo dentro de cada período
+            for grupo in todos_los_grupos:
+                grado_num = grupo['numero_grado']
+                grupo_cod = grupo['codigo_grupo']
+                id_grado = grupo['id_grado']
+                id_grupo = grupo['id_grupo']
+                
+                ruta_grupo = os.path.join(periodo_folder, f"Grado_{grado_num}", f"Grupo_{grupo_cod}")
+                if not os.path.exists(ruta_grupo):
+                    os.makedirs(ruta_grupo, exist_ok=True)
+                    carpetas_creadas += 1
+                
+                # Obtener asignaciones para este grupo en este período
+                cursor.execute("""
+                    SELECT DISTINCT id_materia FROM asignaciones_docente 
+                    WHERE id_grupo = %s AND estado = 'Activa'
+                """, (id_grupo,))
+                asignaciones = cursor.fetchall()
+                
+                # Si no hay asignaciones, crear para todas las materias
+                if not asignaciones:
+                    cursor.execute("SELECT id_materia FROM materias")
+                    asignaciones = cursor.fetchall()
+                
+                # Crear Excel para cada materia en este período
+                for asig in asignaciones:
+                    # Obtener nombre de materia para el nombre del archivo
+                    cursor.execute("SELECT nombre_materia FROM materias WHERE id_materia = %s", (asig['id_materia'],))
+                    mat_row = cursor.fetchone()
+                    nombre_materia = mat_row['nombre_materia'] if mat_row else f"Materia_{asig['id_materia']}"
+                    materia_limpia = nombre_materia.replace(" ", "_").replace("/", "-")
+                    
+                    nombre_archivo = f"{materia_limpia}_G{grado_num}_{grupo_cod}_P{numero_periodo}.xlsx"
+                    ruta_archivo = os.path.join(ruta_grupo, nombre_archivo)
+                    
+                    try:
+                        # Solo crear si no existe
+                        if not os.path.exists(ruta_archivo):
+                            _crear_excel_fisico(id_grado, id_grupo, asig['id_materia'], 
+                                              periodo_id=periodo_id,
+                                              force_recreate=True,
+                                              save_path=ruta_archivo)
+                            archivos_creados += 1
+                            created_files.append(ruta_archivo)
+                    except Exception as ex:
+                        errors.append({
+                            'periodo': numero_periodo,
+                            'grado': grado_num,
+                            'grupo': grupo_cod,
+                            'materia_id': asig['id_materia'],
+                            'error': str(ex)
+                        })
+        
+        # También crear estructura antigua para compatibilidad
         for grupo in todos_los_grupos:
             ruta = os.path.join(PLANILLAS_DIR, f"Grado_{grupo['numero_grado']}", f"Grupo_{grupo['codigo_grupo']}")
             if not os.path.exists(ruta):
                 os.makedirs(ruta, exist_ok=True)
-                carpetas_creadas += 1
-
-        # 2. Obtener todas las asignaciones (Materias designadas)
-        cursor.execute("""
-            SELECT id_grado, id_grupo, id_materia 
-            FROM asignaciones_docente WHERE estado = 'Activa'
-        """)
-        asignaciones = cursor.fetchall()
-
-        archivos_creados = 0
-        created_files = []
-        errors = []
-
-        if not asignaciones:
-            # Si no hay asignaciones activas, crear exceles para todas las combinaciones
-            # de grupos y materias (modo "crear todo" para instalaciones nuevas).
-            cursor.execute("""
-                SELECT g.id_grado, gr.id_grupo, g.numero_grado, gr.codigo_grupo
-                FROM grupos gr
-                JOIN grados g ON gr.id_grado = g.id_grado
-            """)
-            grupos = cursor.fetchall()
-
-            cursor.execute("SELECT id_materia FROM materias")
-            materias_rows = cursor.fetchall()
-            materias = [m['id_materia'] for m in materias_rows]
-
-            for grupo in grupos:
-                for m_id in materias:
-                    try:
-                        res = _crear_excel_fisico(grupo['id_grado'], grupo['id_grupo'], m_id, force_recreate=True)
-                        if res:
-                            archivos_creados += 1
-                            created_files.append(res)
-                    except Exception as ex:
-                        errors.append({
-                            'grado': grupo.get('id_grado'),
-                            'grupo': grupo.get('id_grupo'),
-                            'materia': m_id,
-                            'error': str(ex)
-                        })
-        else:
-            for asig in asignaciones:
-                try:
-                    res = _crear_excel_fisico(asig['id_grado'], asig['id_grupo'], asig['id_materia'], force_recreate=True)
-                    if res:
-                        archivos_creados += 1
-                        created_files.append(res)
-                except Exception as ex:
-                    errors.append({
-                        'grado': asig.get('id_grado'),
-                        'grupo': asig.get('id_grupo'),
-                        'materia': asig.get('id_materia'),
-                        'error': str(ex)
-                    })
-
-        cursor.close(); conn.close()
+        
+        cursor.close()
+        conn.close()
                 
         return jsonify({
             'status': 'ok',
-            'message': f'Sincronización completa. Carpetas de grados/grupos verificadas. {carpetas_creadas} nuevas carpetas creadas.',
-            'archivos_en_sistema': archivos_creados,
-            'created_files': created_files,
+            'message': f'✅ Sincronización completa. {carpetas_creadas} carpetas de período creadas.',
+            'archivos_creados': archivos_creados,
+            'periodos_procesados': len(periodos),
+            'created_files': created_files[:10],  # Mostrar primeros 10
             'errors': errors
         }), 200
 
@@ -2426,5 +2456,150 @@ def api_periodos_info():
         
         info['años'] = sorted(info['años'])
         return jsonify(info), 200
+    except Exception as e:
+        return _error_interno(e)
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# FASE 2: ENDPOINTS DE DESCARGA POR PERÍODO
+# ════════════════════════════════════════════════════════════════════════════════
+
+@calificaciones_bp.route('/api/calificaciones/periodos/<int:periodo_id>/listar', methods=['GET'])
+def api_listar_periodo(periodo_id):
+    """Lista todos los archivos Excel de un período específico."""
+    try:
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Validar que el período existe
+        cursor.execute("SELECT numero_periodo FROM periodos WHERE id_periodo = %s", (periodo_id,))
+        periodo = cursor.fetchone()
+        if not periodo:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Período no encontrado'}), 404
+        
+        cursor.close()
+        conn.close()
+        
+        PERIODOS_DIR = os.path.join(ESCRITORIO, 'Periodos_DocstrY')
+        periodo_folder = os.path.join(PERIODOS_DIR, f"Período_{periodo['numero_periodo']}")
+        
+        if not os.path.exists(periodo_folder):
+            return jsonify({'error': 'Carpeta del período no existe. Sincroniza primero.'}), 404
+        
+        # Construir lista de archivos
+        archivos = []
+        for root, dirs, files in os.walk(periodo_folder):
+            for file in files:
+                if file.endswith('.xlsx'):
+                    ruta_completa = os.path.join(root, file)
+                    ruta_relativa = os.path.relpath(ruta_completa, PERIODOS_DIR)
+                    tamaño = os.path.getsize(ruta_completa)
+                    archivos.append({
+                        'nombre': file,
+                        'ruta_relativa': ruta_relativa,
+                        'tamaño_kb': round(tamaño / 1024, 2),
+                        'modificado': str(os.path.getmtime(ruta_completa))
+                    })
+        
+        return jsonify({
+            'status': 'ok',
+            'periodo_id': periodo_id,
+            'numero_periodo': periodo['numero_periodo'],
+            'total_archivos': len(archivos),
+            'archivos': sorted(archivos, key=lambda x: x['nombre'])
+        }), 200
+    except Exception as e:
+        return _error_interno(e)
+
+
+@calificaciones_bp.route('/api/calificaciones/periodos/descargar_archivo', methods=['GET'])
+def api_descargar_archivo_periodo():
+    """
+    Descarga un archivo Excel individual de la estructura de períodos.
+    Parámetros: periodo_id, ruta_relativa (desde Periodos_DocstrY)
+    """
+    try:
+        from urllib.parse import unquote
+        
+        periodo_id = request.args.get('periodo_id', type=int)
+        ruta_relativa = unquote(request.args.get('ruta', ''))
+        
+        if not periodo_id or not ruta_relativa:
+            return jsonify({'error': 'Faltan parámetros: periodo_id y ruta'}), 400
+        
+        PERIODOS_DIR = os.path.join(ESCRITORIO, 'Periodos_DocstrY')
+        
+        # Validar que la ruta esté dentro de PERIODOS_DIR (seguridad)
+        ruta_completa = os.path.normpath(os.path.join(PERIODOS_DIR, ruta_relativa))
+        
+        if not ruta_completa.startswith(os.path.normpath(PERIODOS_DIR)):
+            return jsonify({'error': 'Acceso denegado: ruta inválida'}), 403
+        
+        if not os.path.exists(ruta_completa):
+            return jsonify({'error': 'Archivo no encontrado'}), 404
+        
+        nombre_archivo = os.path.basename(ruta_completa)
+        
+        return send_file(
+            ruta_completa,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=nombre_archivo
+        )
+    except Exception as e:
+        return _error_interno(e)
+
+
+@calificaciones_bp.route('/api/calificaciones/periodos/<int:periodo_id>/descargar_zip', methods=['GET'])
+def api_descargar_zip_periodo(periodo_id):
+    """Descarga todos los archivos Excel de un período comprimidos en ZIP."""
+    try:
+        import zipfile
+        from io import BytesIO
+        from datetime import datetime
+        
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Validar que el período existe
+        cursor.execute("SELECT numero_periodo FROM periodos WHERE id_periodo = %s", (periodo_id,))
+        periodo = cursor.fetchone()
+        if not periodo:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Período no encontrado'}), 404
+        
+        cursor.close()
+        conn.close()
+        
+        PERIODOS_DIR = os.path.join(ESCRITORIO, 'Periodos_DocstrY')
+        periodo_folder = os.path.join(PERIODOS_DIR, f"Período_{periodo['numero_periodo']}")
+        
+        if not os.path.exists(periodo_folder):
+            return jsonify({'error': 'Carpeta del período no existe'}), 404
+        
+        # Crear ZIP en memoria
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for root, dirs, files in os.walk(periodo_folder):
+                for file in files:
+                    if file.endswith('.xlsx'):
+                        ruta_archivo = os.path.join(root, file)
+                        # Ruta relativa dentro del ZIP (mantener estructura)
+                        arcname = os.path.relpath(ruta_archivo, PERIODOS_DIR)
+                        zip_file.write(ruta_archivo, arcname=arcname)
+        
+        zip_buffer.seek(0)
+        fecha_hoy = datetime.now().strftime('%Y%m%d')
+        nombre_zip = f"Calificaciones_Periodo_{periodo['numero_periodo']}_{fecha_hoy}.zip"
+        
+        return send_file(
+            zip_buffer,
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name=nombre_zip
+        )
     except Exception as e:
         return _error_interno(e)
