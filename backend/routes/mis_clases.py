@@ -243,3 +243,117 @@ def api_descargar_excel_clase(id_asignacion):
     except Exception as e:
         print(f'[descargar_excel] Error: {e}')
         return jsonify({'error': str(e)[:100]}), 500
+
+
+# ── ENDPOINT: Calificaciones de una clase (como módulo Calificaciones) ────────
+
+@mis_clases_bp.route('/api/mis_clases/<int:id_asignacion>/calificaciones', methods=['GET'])
+def api_clase_calificaciones(id_asignacion):
+    """
+    Retorna estudiantes, actividades y notas de una clase específica.
+    Estructura idéntica a la del módulo Calificaciones pero solo para esta clase.
+    """
+    try:
+        user_id = _verificar_autenticacion()
+        if not user_id:
+            return jsonify({'error': 'No autenticado'}), 401
+        
+        conn = get_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # 1. Verificar que el docente es propietario
+        cursor.execute("""
+            SELECT a.*, g.numero_grado, gr.codigo_grupo, m.nombre_materia, m.id_materia
+            FROM asignaciones_docente a
+            JOIN grados g ON a.id_grado = g.id_grado
+            JOIN grupos gr ON a.id_grupo = gr.id_grupo
+            JOIN materias m ON a.id_materia = m.id_materia
+            WHERE a.id_asignacion = %s AND a.id_usuario = %s AND a.estado = 'Activa'
+        """, (id_asignacion, user_id))
+        
+        asignacion = cursor.fetchone()
+        if not asignacion:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Acceso denegado'}), 403
+        
+        # 2. Obtener estudiantes activos del grupo
+        cursor.execute("""
+            SELECT id_estudiante, nombre, apellido, documento
+            FROM estudiantes
+            WHERE id_grupo = %s AND estado = 'Activo'
+            ORDER BY apellido, nombre
+        """, (asignacion['id_grupo'],))
+        estudiantes = cursor.fetchall() or []
+        
+        # 3. Obtener actividades de la materia (período actual)
+        cursor.execute("""
+            SELECT p.numero_periodo
+            FROM periodos p
+            WHERE p.estado = 'Activo'
+            LIMIT 1
+        """)
+        periodo_row = cursor.fetchone()
+        periodo_actual = periodo_row['numero_periodo'] if periodo_row else 1
+        
+        cursor.execute("""
+            SELECT id_actividad, nombre_actividad, tipo_actividad, ponderacion, puntaje_maximo
+            FROM actividades
+            WHERE id_materia = %s AND id_periodo = %s AND estado = 'Activa'
+            ORDER BY fecha_creacion ASC
+        """, (asignacion['id_materia'], periodo_actual))
+        actividades = cursor.fetchall() or []
+        
+        # 4. Obtener notas
+        cursor.execute("""
+            SELECT id_estudiante, id_actividad, puntaje_obtenido
+            FROM notas
+            WHERE id_estudiante IN (SELECT id_estudiante FROM estudiantes WHERE id_grupo = %s)
+            AND id_actividad IN (SELECT id_actividad FROM actividades WHERE id_materia = %s AND id_periodo = %s)
+        """, (asignacion['id_grupo'], asignacion['id_materia'], periodo_actual))
+        notas_data = cursor.fetchall() or []
+        
+        # Construir mapeo de notas: {estudiante_id}_{actividad_id} -> puntaje
+        notas_map = {}
+        for nota in notas_data:
+            key = f"{nota['id_estudiante']}_{nota['id_actividad']}"
+            notas_map[key] = nota['puntaje_obtenido']
+        
+        cursor.close()
+        conn.close()
+        
+        # Formatear respuesta
+        return jsonify({
+            'status': 'ok',
+            'clase': {
+                'id_asignacion': id_asignacion,
+                'grado': f"Grado {asignacion['numero_grado']}",
+                'grupo': asignacion['codigo_grupo'],
+                'materia': asignacion['nombre_materia'],
+                'periodo': periodo_actual
+            },
+            'estudiantes': [
+                {
+                    'id_estudiante': e['id_estudiante'],
+                    'nombre': e['nombre'],
+                    'apellido': e['apellido'],
+                    'documento': e['documento']
+                }
+                for e in estudiantes
+            ],
+            'actividades': [
+                {
+                    'id_actividad': a['id_actividad'],
+                    'nombre_actividad': a['nombre_actividad'],
+                    'tipo_actividad': a['tipo_actividad'],
+                    'ponderacion': float(a['ponderacion']),
+                    'puntaje_maximo': float(a['puntaje_maximo'])
+                }
+                for a in actividades
+            ],
+            'notas': notas_map
+        }), 200
+        
+    except Exception as e:
+        print(f'[clase_calificaciones] Error: {e}')
+        return jsonify({'error': str(e)[:100]}), 500
