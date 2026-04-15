@@ -15,11 +15,11 @@ let USUARIO = {
 
 // Permisos por rol (módulos visibles para cada rol)
 const PERMISOS = {
-    'server_admin': ['dashboard', 'usuarios', 'estudiantes', 'docentes', 'horarios-gestion', 'grados', 'materias', 'horarios', 'periodos', 'calificaciones', 'asistencia', 'observador', 'comunicados', 'reportes', 'logs', 'mis-clases', 'mis-materias', 'mi-horario'],
+    'server_admin': ['dashboard', 'usuarios', 'estudiantes', 'docentes', 'horarios-gestion', 'grados', 'materias', 'horarios', 'periodos', 'calificaciones', 'asistencia', 'observador', 'comunicados', 'reportes', 'logs'],
     'rector': ['dashboard', 'usuarios', 'estudiantes', 'docentes', 'horarios-gestion', 'grados', 'materias', 'horarios', 'periodos', 'calificaciones', 'asistencia', 'observador', 'comunicados', 'reportes', 'logs'],
-    'coordinador': ['dashboard', 'usuarios', 'estudiantes', 'docentes', 'horarios-gestion', 'grados', 'materias', 'horarios', 'periodos', 'calificaciones', 'asistencia', 'observador', 'comunicados', 'reportes'],
-    'docente': ['dashboard', 'mis-clases', 'mis-materias', 'mi-horario', 'periodos', 'calificaciones', 'asistencia', 'observador', 'comunicados', 'reportes'],
-    'profesor': ['dashboard', 'mis-clases', 'mis-materias', 'mi-horario', 'periodos', 'calificaciones', 'asistencia', 'observador', 'comunicados', 'reportes']
+    'coordinador': ['dashboard', 'usuarios', 'estudiantes', 'docentes', 'horarios-gestion', 'grados', 'materias', 'horarios', 'periodos', 'calificaciones', 'asistencia', 'observador', 'comunicados', 'reportes', 'logs'],
+    'docente': ['dashboard', 'mi-horario', 'calificaciones', 'asistencia', 'observador', 'comunicados', 'reportes'],
+    'profesor': ['dashboard', 'mi-horario', 'calificaciones', 'asistencia', 'observador', 'comunicados', 'reportes']
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -126,11 +126,6 @@ function getMenuItems() {
             ]},
             { seccion: 'SISTEMA', items: [
                 { id: 'logs', icono: 'fa-history', texto: 'Logs del Sistema' }
-            ]},
-            { seccion: 'VISTA DOCENTE', items: [
-                { id: 'mis-clases', icono: 'fa-chalkboard', texto: 'Mis Clases' },
-                { id: 'mis-materias', icono: 'fa-book-open', texto: 'Mis Materias' },
-                { id: 'mi-horario', icono: 'fa-calendar-week', texto: 'Mi Horario' }
             ]}
         ];
     }
@@ -141,12 +136,7 @@ function getMenuItems() {
                 { id: 'dashboard', icono: 'fa-home', texto: 'Menú Principal' }
             ]},
             { seccion: 'MI ESPACIO', items: [
-                { id: 'mis-clases', icono: 'fa-chalkboard', texto: 'Mis Clases' },
-                { id: 'mis-materias', icono: 'fa-book-open', texto: 'Mis Materias' },
                 { id: 'mi-horario', icono: 'fa-calendar-week', texto: 'Mi Horario' }
-            ]},
-            { seccion: 'ACADÉMICO', items: [
-                { id: 'periodos', icono: 'fa-calendar-alt', texto: 'Períodos' }
             ]},
             { seccion: 'EVALUACIÓN', items: [
                 { id: 'calificaciones', icono: 'fa-star', texto: 'Calificaciones' },
@@ -288,15 +278,12 @@ const TITULOS_PAGINAS = {
     'horarios': 'Horarios',
     'horarios-gestion': 'Horarios Docentes',
     'periodos': 'Períodos',
-    'horarios-gestion': 'Horarios Docentes',
     'calificaciones': 'Calificaciones',
     'asistencia': 'Asistencia',
     'observador': 'Observador',
     'comunicados': 'Comunicados',
     'reportes': 'Reportes',
     'logs': 'Logs del Sistema',
-    'mis-clases': 'Mis Clases',
-    'mis-materias': 'Mis Materias',
     'mi-horario': 'Mi Horario'
 };
 
@@ -330,10 +317,8 @@ function cargarPagina(pagina) {
         case 'periodos':        if (typeof renderPeriodos === 'function') { renderPeriodos(); } else { renderPlaceholder('Gestión de Períodos (Cargando...)', 'fa-calendar-alt'); } break;
         case 'asistencia':      if (typeof renderAsistencia === 'function') { renderAsistencia(); } else { renderPlaceholder('Control de Asistencia (Cargando...)', 'fa-clipboard-check'); } break;
         case 'observador':      if (typeof renderObservador === 'function') { renderObservador(); } else { renderPlaceholder('Observador del Estudiante (Cargando...)', 'fa-eye'); } break;
-        case 'logs':            renderPlaceholder('Logs del Sistema', 'fa-history'); break;
-        case 'mis-clases':      if (window.MisClasesModule) { window.MisClasesModule.init(); } else { renderPlaceholder('Mis Clases (Cargando...)', 'fa-chalkboard'); } break;
-        case 'mis-materias':    renderPlaceholder('Mis Materias', 'fa-book-open'); break;
-        case 'mi-horario':      renderMiHorario(); break;
+        case 'logs':            if (typeof renderLogs === 'function') { renderLogs(); } else { renderPlaceholder('Logs del Sistema', 'fa-history'); } break;
+        case 'mi-horario':      if (typeof renderMiHorario === 'function') { renderMiHorario(); } else { renderPlaceholder('Mi Horario (Cargando...)', 'fa-calendar-week'); } break;
         default:
             content.innerHTML = `
                 <div class="card">
@@ -374,13 +359,11 @@ function renderDashboard() {
             { id: 'comunicados', icono: 'fa-bullhorn', titulo: 'Comunicados', descripcion: 'Publica circulares, avisos e información para la comunidad.' },
             { id: 'reportes', icono: 'fa-file-pdf', titulo: 'Reportes', descripcion: 'Genera boletines, consolidados y reportes institucionales.' },
             { id: 'logs', icono: 'fa-history', titulo: 'Logs del Sistema', descripcion: 'Consulta el historial de acciones realizadas en el sistema.' },
-            { id: 'mis-clases', icono: 'fa-chalkboard', titulo: 'Mis Clases (Vista Docente)', descripcion: 'Vista previa de cómo ven los docentes sus clases asignadas.' },
             { id: 'mis-materias', icono: 'fa-book-open', titulo: 'Mis Materias (Vista Docente)', descripcion: 'Vista previa de cómo ven los docentes sus materias.' },
             { id: 'mi-horario', icono: 'fa-calendar-week', titulo: 'Mi Horario (Vista Docente)', descripcion: 'Vista previa del horario personal del docente.' }
         ];
     } else if (esDocente()) {
         secciones = [
-            { id: 'mis-clases', icono: 'fa-chalkboard', titulo: 'Mis Clases', descripcion: 'Visualiza los grupos y grados donde impartes clases este año escolar.' },
             { id: 'mis-materias', icono: 'fa-book-open', titulo: 'Mis Materias', descripcion: 'Consulta las materias que tienes asignadas con sus detalles.' },
             { id: 'mi-horario', icono: 'fa-calendar-week', titulo: 'Mi Horario', descripcion: 'Revisa tu horario semanal de clases organizado por día.' },
             { id: 'estudiantes', icono: 'fa-user-graduate', titulo: 'Estudiantes', descripcion: 'Consulta información de los estudiantes de tus grupos.' },
@@ -474,29 +457,35 @@ async function mostrarPerfil() {
         const res = await fetch('/api/auth/profile');
         const data = await res.json();
 
-        if (data.user) {
-            const u = data.user;
-            document.getElementById('perfil-content').innerHTML = `
-                <div class="form-group">
-                    <label>Nombre Completo</label>
-                    <input type="text" value="${u.nombre} ${u.apellido}" disabled>
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="text" value="${u.correo}" disabled>
-                </div>
-                <div class="form-group">
-                    <label>Documento</label>
-                    <input type="text" value="${u.documento}" disabled>
-                </div>
-                <div class="form-group">
-                    <label>Rol</label>
-                    <input type="text" value="${u.nombre_rol}" disabled>
-                </div>
-            `;
+        if (!res.ok) {
+            throw new Error(data.error || 'Error al cargar perfil');
         }
+
+        const u = data.usuario || data.user;
+        if (!u) {
+            throw new Error('Perfil no disponible');
+        }
+
+        document.getElementById('perfil-content').innerHTML = `
+            <div class="form-group">
+                <label>Nombre Completo</label>
+                <input type="text" value="${u.nombre} ${u.apellido}" disabled>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="text" value="${u.correo}" disabled>
+            </div>
+            <div class="form-group">
+                <label>Documento</label>
+                <input type="text" value="${u.documento}" disabled>
+            </div>
+            <div class="form-group">
+                <label>Rol</label>
+                <input type="text" value="${u.nombre_rol}" disabled>
+            </div>
+        `;
     } catch (e) {
-        document.getElementById('perfil-content').innerHTML = '<p class="text-error">Error al cargar perfil</p>';
+        document.getElementById('perfil-content').innerHTML = `<p class="text-error">${e.message || 'Error al cargar perfil'}</p>`;
     }
 }
 

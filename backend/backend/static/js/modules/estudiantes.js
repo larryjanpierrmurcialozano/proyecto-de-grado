@@ -5,6 +5,7 @@
 
 let ESTUDIANTES_CACHE = [];
 let GRUPOS_CACHE_EST = []; // Cache local para evitar conflictos
+let PERIODOS_CACHE_EST = [];
 
 async function renderEstudiantes() {
     const content = document.getElementById('main-content');
@@ -87,10 +88,80 @@ function dibujarTablaEstudiantes(lista) {
                 <td>${gradoGrupo}</td>
                 <td>${acudiente}</td>
                 <td>${Helpers.badgeEstado(e.estado)}</td>
-                <td>${Helpers.botonesAcciones(e.id_estudiante, 'verEstudiante', 'abrirModalEstudiante', 'eliminarEstudiante')}</td>
+                <td>
+                    <div class="acciones-btns">
+                        <button class="btn-accion btn-accion-cafe" title="Ver" onclick="verEstudiante(${e.id_estudiante})"><i class="fas fa-eye"></i></button>
+                        <button class="btn-accion btn-accion-azul" title="Boletín" onclick="abrirModalBoletinEstudiante(${e.id_estudiante})"><i class="fas fa-file-pdf"></i></button>
+                        <button class="btn-accion btn-accion-verde" title="Editar" onclick="abrirModalEstudiante(${e.id_estudiante})"><i class="fas fa-edit"></i></button>
+                        <button class="btn-accion btn-accion-rojo" title="Eliminar" onclick="eliminarEstudiante(${e.id_estudiante})"><i class="fas fa-trash"></i></button>
+                    </div>
+                </td>
             </tr>
         `;
     }).join('');
+}
+
+async function abrirModalBoletinEstudiante(id) {
+    const overlay = document.getElementById('modal-boletin-estudiante');
+    if (!overlay) {
+        mostrarAlerta('No se encontró el modal de boletín', 'error');
+        return;
+    }
+    overlay.classList.add('active');
+    document.getElementById('boletin-estudiante-id').value = id;
+
+    if (!PERIODOS_CACHE_EST.length) {
+        try {
+            const res = await API.getPeriodos();
+            PERIODOS_CACHE_EST = res.periodos || [];
+        } catch (e) {
+            mostrarAlerta('No se pudieron cargar los períodos', 'error');
+            return;
+        }
+    }
+
+    const select = document.getElementById('boletin-estudiante-periodo');
+    if (select) {
+        select.innerHTML = PERIODOS_CACHE_EST.map(p => {
+            const activo = p.estado === 'Abierto' ? ' (Activo)' : '';
+            return `<option value="${p.id_periodo}">${p.nombre_periodo || ('Período ' + p.numero_periodo)}${activo}</option>`;
+        }).join('');
+    }
+}
+
+async function descargarBoletinEstudiante() {
+    const estudianteId = document.getElementById('boletin-estudiante-id')?.value;
+    const periodoId = document.getElementById('boletin-estudiante-periodo')?.value;
+    if (!estudianteId || !periodoId) {
+        mostrarAlerta('Selecciona el período', 'error');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/boletines/generar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_estudiante: estudianteId, periodo_id: periodoId, formato: 'pdf' })
+        });
+
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Error generando el boletín');
+        }
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Boletin_${estudianteId}_P${periodoId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        mostrarAlerta('Boletín generado sin problemas', 'success');
+    } catch (e) {
+        mostrarAlerta(e.message || 'No se pudo generar el boletín', 'error');
+    }
 }
 
 async function abrirModalEstudiante(id = null) {

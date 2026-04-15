@@ -2,7 +2,7 @@
 # FUNCIONES AUXILIARES
 # ════════════════════════════════════════════════════════════════════════════════
 
-from flask import jsonify, session
+from flask import jsonify, request, session
 from functools import wraps
 import bcrypt
 from utils.database import get_db
@@ -27,17 +27,43 @@ def verify_password(password, hashed):
         return False
 
 
-def log_action(id_usuario, accion, descripcion):
-    """Registro de acciones (con fallback silencioso si la tabla no existe)"""
+def log_action(id_usuario, accion, descripcion, *, tabla_afectada=None, registro_id=None, ip_address=None, user_agent=None, exito=True):
+    """Registro de acciones (con fallback silencioso si la tabla no existe)."""
     try:
+        if not ip_address:
+            try:
+                ip_address = request.remote_addr
+            except Exception:
+                ip_address = None
+
+        if not user_agent:
+            try:
+                user_agent = request.headers.get('User-Agent')
+            except Exception:
+                user_agent = None
+
         conn = get_db()
         if not conn:
             return
         cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO log_registro (id_usuario, tipo_accion, descripcion) VALUES (%s, %s, %s)",
-            (id_usuario, accion, descripcion)
-        )
+        try:
+            cursor.execute(
+                """
+                INSERT INTO log_registro
+                    (id_usuario, tipo_accion, descripcion, tabla_afectada, registro_id, ip_address, user_agent, exito)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (id_usuario, accion, descripcion, tabla_afectada, registro_id, ip_address, user_agent, int(bool(exito)))
+            )
+        except Exception:
+            cursor.execute(
+                """
+                INSERT INTO log_registro
+                    (id_usuario, tipo_accion, descripcion, tabla_afectada, registro_id, ip_address, user_agent)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (id_usuario, accion, descripcion, tabla_afectada, registro_id, ip_address, user_agent)
+            )
         conn.commit()
     except Exception as e:
         print(f"Log error: {e}")

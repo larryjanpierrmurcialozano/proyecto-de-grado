@@ -7,6 +7,9 @@
             <button id="btn-sincronizar" class="btn btn-secondary">
                 <i class="bx bx-sync"></i> Sincronización Total (Escritorio)
             </button>
+            <button id="btn-sincronizar-boletines" class="btn btn-info">
+                <i class="fas fa-file-pdf"></i> Boletines (Escritorio)
+            </button>
             <button id="btn-agregar-acuerdo" class="btn btn-primary" style="display:none;">
                 <i class="fas fa-file-pdf"></i> Agregar Acuerdo Pedagógico
             </button>
@@ -77,9 +80,11 @@
         <span class="cal-leyenda-item"><span class="cal-leyenda-color cal-leyenda-basico"></span> Básico (≥3.0)</span>
         <span class="cal-leyenda-item"><span class="cal-leyenda-color cal-leyenda-bajo"></span> Bajo (&lt;3.0)</span>
     </div>
-
+<!--la seccion de cargar plantillas para lectura y transicion de mapeo a la base de datos, no funciona logicamente,
+esto es asi porque, simplemenete no le se a que meter ni como meterlo, se que es algo que puede ser con ia para facilitar procesos,
+asi que lo dejaremos para el tecnologo o nuestro desarrollo profesional, claro que si chaval-->
     <div class="cal-upload-grid">
-        <div class="cal-upload-wrap cal-bloque">
+        <div class="cal-upload-wrap cal-bloque" style="display: none;">
             <div class="cal-upload-header">
                 <h4><i class="fas fa-file-upload"></i> Subir Planilla Editada</h4>
                 <p>Si trabajaste el Excel fuera del sistema, súbelo aquí. La versión anterior irá al archivador histórico.</p>

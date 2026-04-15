@@ -7,6 +7,7 @@ let OBSERVACIONES_CACHE = [];
 let OBSERVADOR_SCHEMA = {};
 let ESTUDIANTES_OBSERVADOR_CACHE = [];
 let OBS_GRUPOS_CACHE = [];
+let OBS_MATERIAS_CACHE = [];
 
 const OBS_PROTOCOLOS_GUIA = {
     TIPO_1: {
@@ -60,6 +61,28 @@ function _obsFindEstudiante(idEstudiante) {
     return ESTUDIANTES_OBSERVADOR_CACHE.find(e => String(e.id_estudiante) === String(idEstudiante)) || null;
 }
 
+function _obsMateriaNombrePorId(idMateria) {
+    if (!idMateria) return '';
+    const item = OBS_MATERIAS_CACHE.find(m => String(m.id_materia) === String(idMateria));
+    return item ? (item.nombre_materia || '') : '';
+}
+
+function _buildMateriasOptions(selectedId = null) {
+    if (!OBS_MATERIAS_CACHE.length) {
+        return { html: '<option value="">No hay asignaturas asignadas</option>', disabled: true };
+    }
+
+    const options = OBS_MATERIAS_CACHE.map(m => {
+        const selected = selectedId && String(selectedId) === String(m.id_materia) ? 'selected' : '';
+        return `<option value="${m.id_materia}" ${selected}>${escapeHtml(m.nombre_materia || '')}</option>`;
+    }).join('');
+
+    return {
+        html: `<option value="">Seleccionar asignatura...</option>${options}`,
+        disabled: false
+    };
+}
+
 function _obsBuildCompromisoSeguimiento(observacion) {
     const partes = [];
     if (observacion?.compromiso) {
@@ -78,6 +101,7 @@ function _obsFormatoData(observacion = null) {
         : ((typeof USUARIO !== 'undefined' && USUARIO?.nombre) ? USUARIO.nombre : '');
 
     const fechaObs = observacion?.fecha_observacion || new Date().toISOString();
+    const asignatura = observacion?.asignatura_nombre || observacion?.asignatura || _obsMateriaNombrePorId(observacion?.id_materia);
 
     return {
         institucion: 'INSTITUCION EDUCATIVA INEM JULIAN MOTTA SALAS - NEIVA',
@@ -88,7 +112,7 @@ function _obsFormatoData(observacion = null) {
         docente: docenteNombre,
         grado: est?.nombre_grado || '',
         seccion: est?.codigo_grupo || (observacion?.codigo_grupo || ''),
-        asignatura: '',
+        asignatura: asignatura,
         tipo: observacion?.tipo_observacion || '',
         protocolo: observacion?.protocolo_tipo || '',
         estado: observacion?.estado_caso || '',
@@ -479,6 +503,7 @@ function _buildModalHtml() {
     const hasNotif = _schemaEnabled('has_acudiente_notificado');
     const hasFechaNotif = _schemaEnabled('has_fecha_notificacion');
     const hasDescargos = _schemaEnabled('has_descargos_estudiante');
+    const materiasSelect = _buildMateriasOptions();
 
     return `
         <div class="modal-overlay" id="modal-observacion">
@@ -518,13 +543,20 @@ function _buildModalHtml() {
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Fecha *</label>
-                            <input type="date" id="obs-fecha-observacion" required>
+                            <label>Fecha y hora *</label>
+                            <input type="datetime-local" id="obs-fecha-observacion" required>
                         </div>
                         <div class="form-group">
                             <label>Categoria</label>
                             <input type="text" id="obs-categoria" placeholder="Ej: Convivencia, Academico...">
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Asignatura *</label>
+                        <select id="obs-materia" ${materiasSelect.disabled ? 'disabled' : 'required'}>
+                            ${materiasSelect.html}
+                        </select>
                     </div>
 
                     ${advanced ? `
@@ -650,14 +682,18 @@ async function renderObservador() {
     content.innerHTML = Helpers.loading();
 
     try {
-        const [obsRes, estRes] = await Promise.all([
+        const materiasPromise = (API.getMisMaterias ? API.getMisMaterias() : Promise.resolve({ materias: [] }))
+            .catch(() => ({ materias: [] }));
+        const [obsRes, estRes, materiasRes] = await Promise.all([
             API.getObservaciones(),
-            API.getEstudiantes()
+            API.getEstudiantes(),
+            materiasPromise
         ]);
 
         OBSERVACIONES_CACHE = obsRes.observaciones || [];
         OBSERVADOR_SCHEMA = obsRes.schema || {};
         ESTUDIANTES_OBSERVADOR_CACHE = estRes.estudiantes || [];
+        OBS_MATERIAS_CACHE = materiasRes.materias || [];
         _buildGruposCache();
 
         const htmlRes = await fetch('/templates/modules html/observador.html');
@@ -889,7 +925,14 @@ function abrirModalObservacion(id = null) {
     const grupoModal = document.getElementById('obs-filtro-grupo');
     if (grupoModal) grupoModal.innerHTML = _buildGruposFilterOptions('Todos los grupos');
 
-    document.getElementById('obs-fecha-observacion').value = toDateInputValue(new Date().toISOString());
+    const materiaSelect = document.getElementById('obs-materia');
+    if (materiaSelect) {
+        const materiasSelect = _buildMateriasOptions();
+        materiaSelect.innerHTML = materiasSelect.html;
+        materiaSelect.disabled = materiasSelect.disabled;
+    }
+
+    document.getElementById('obs-fecha-observacion').value = toDateTimeLocalInputValue(new Date().toISOString());
     if (document.getElementById('obs-protocolo')) document.getElementById('obs-protocolo').value = 'TIPO_1';
     if (document.getElementById('obs-estado-caso')) document.getElementById('obs-estado-caso').value = 'Abierto';
 
@@ -917,7 +960,7 @@ function abrirModalObservacion(id = null) {
         if (prot) prot.value = observacion.protocolo_tipo || 'TIPO_1';
         const est = document.getElementById('obs-estado-caso');
         if (est) est.value = observacion.estado_caso || 'Abierto';
-        document.getElementById('obs-fecha-observacion').value = toDateInputValue(observacion.fecha_observacion);
+        document.getElementById('obs-fecha-observacion').value = toDateTimeLocalInputValue(observacion.fecha_observacion);
         document.getElementById('obs-descripcion').value = observacion.descripcion || '';
         const desc = document.getElementById('obs-descargos-estudiante');
         if (desc) desc.value = observacion.descargos_estudiante || '';
@@ -938,6 +981,18 @@ function abrirModalObservacion(id = null) {
         if (an) an.checked = Number(observacion.acudiente_notificado || 0) === 1;
         const fn = document.getElementById('obs-fecha-notificacion');
         if (fn) fn.value = toDateTimeLocalInputValue(observacion.fecha_notificacion);
+
+        if (materiaSelect) {
+            const materiasSelect = _buildMateriasOptions(observacion.id_materia || null);
+            materiaSelect.innerHTML = materiasSelect.html;
+            materiaSelect.disabled = materiasSelect.disabled;
+            if (observacion.id_materia) {
+                materiaSelect.value = String(observacion.id_materia);
+            } else if (observacion.asignatura) {
+                const match = OBS_MATERIAS_CACHE.find(m => (m.nombre_materia || '').toLowerCase() === String(observacion.asignatura).toLowerCase());
+                if (match) materiaSelect.value = String(match.id_materia);
+            }
+        }
     } else {
         const grupoGlobal = document.getElementById('filtro-observador-grupo')?.value || '';
         if (grupoModal && grupoGlobal) grupoModal.value = grupoGlobal;
@@ -952,13 +1007,15 @@ async function submitObservacion(event) {
     event.preventDefault();
 
     const id = document.getElementById('obs-id').value;
+    const materiaSelect = document.getElementById('obs-materia');
+    const fechaObsInput = document.getElementById('obs-fecha-observacion')?.value || toDateTimeLocalInputValue(new Date().toISOString());
     const payload = {
         id_estudiante: Number(document.getElementById('obs-estudiante').value),
         tipo_observacion: document.getElementById('obs-tipo').value,
         categoria: document.getElementById('obs-categoria')?.value || null,
         protocolo_tipo: document.getElementById('obs-protocolo')?.value || null,
         estado_caso: document.getElementById('obs-estado-caso')?.value || null,
-        fecha_observacion: document.getElementById('obs-fecha-observacion').value || null,
+        fecha_observacion: fechaObsInput,
         descripcion: document.getElementById('obs-descripcion').value.trim(),
         descargos_estudiante: document.getElementById('obs-descargos-estudiante')?.value.trim() || null,
         medidas_inmediatas: document.getElementById('obs-medidas-inmediatas')?.value.trim() || null,
@@ -972,8 +1029,19 @@ async function submitObservacion(event) {
         fecha_notificacion: document.getElementById('obs-fecha-notificacion')?.value || null
     };
 
+    if (materiaSelect && materiaSelect.value) {
+        payload.id_materia = Number(materiaSelect.value);
+        const materiaTexto = materiaSelect.options[materiaSelect.selectedIndex]?.text || '';
+        if (materiaTexto) payload.asignatura = materiaTexto;
+    }
+
     if (!payload.id_estudiante || Number.isNaN(payload.id_estudiante)) {
         mostrarAlerta('Selecciona un estudiante', 'error');
+        return;
+    }
+
+    if (materiaSelect && !materiaSelect.disabled && !materiaSelect.value) {
+        mostrarAlerta('Selecciona una asignatura', 'error');
         return;
     }
 

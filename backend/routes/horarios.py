@@ -2,9 +2,9 @@
 # BLUEPRINT: HORARIOS — CRUD de bloques horarios por grupo/docente
 # ════════════════════════════════════════════════════════════════════════════════
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, session
 from utils.database import get_db
-from utils.helpers import _error_interno
+from utils.helpers import _error_interno, log_action
 
 horarios_bp = Blueprint('horarios', __name__)
 
@@ -195,8 +195,26 @@ def api_horario_crear():
         new_id = cursor.lastrowid
         cursor.close()
         conn.close()
+
+        if session.get('user_id'):
+            log_action(
+                session.get('user_id'),
+                'CREATE',
+                f"Horario creado (grupo={data['id_grupo']}, dia={dia}, {data['hora_inicio']}-{data['hora_fin']})",
+                tabla_afectada='horarios',
+                registro_id=int(new_id),
+                exito=True
+            )
         return jsonify({'status': 'ok', 'id_horario': new_id}), 201
     except Exception as e:
+        if session.get('user_id'):
+            log_action(
+                session.get('user_id'),
+                'Error',
+                'Fallo al crear horario',
+                tabla_afectada='horarios',
+                exito=False
+            )
         return _error_interno(e)
 
 
@@ -255,8 +273,27 @@ def api_horario_update(id):
         conn.commit()
         cursor.close()
         conn.close()
+
+        if session.get('user_id'):
+            log_action(
+                session.get('user_id'),
+                'UPDATE',
+                f"Horario actualizado (grupo={id_grupo}, dia={dia}, {h_inicio}-{h_fin})",
+                tabla_afectada='horarios',
+                registro_id=int(id),
+                exito=True
+            )
         return jsonify({'status': 'ok'}), 200
     except Exception as e:
+        if session.get('user_id'):
+            log_action(
+                session.get('user_id'),
+                'Error',
+                'Fallo al actualizar horario',
+                tabla_afectada='horarios',
+                registro_id=int(id),
+                exito=False
+            )
         return _error_interno(e)
 
 
@@ -275,8 +312,27 @@ def api_horario_delete(id):
         conn.commit()
         cursor.close()
         conn.close()
+
+        if session.get('user_id'):
+            log_action(
+                session.get('user_id'),
+                'DELETE',
+                'Horario eliminado',
+                tabla_afectada='horarios',
+                registro_id=int(id),
+                exito=True
+            )
         return jsonify({'status': 'ok'}), 200
     except Exception as e:
+        if session.get('user_id'):
+            log_action(
+                session.get('user_id'),
+                'Error',
+                'Fallo al eliminar horario',
+                tabla_afectada='horarios',
+                registro_id=int(id),
+                exito=False
+            )
         return _error_interno(e)
 
 
@@ -413,7 +469,7 @@ def api_exportar_horario_pdf():
                 x_celda = pdf.x
                 
                 # Usar multi_cell para llenar toda la altura
-                pdf.multi_cell(col_dia, row_height/2, texto, border=1, align='C', new_x='RIGHT', new_y='TOP')
+                pdf.multi_cell(col_dia, row_height/2, texto, border=1, align='C')
                 
                 # Asegurar altura uniforme y posición correcta
                 pdf.set_xy(x_celda + col_dia, y_fila)
@@ -424,9 +480,19 @@ def api_exportar_horario_pdf():
         from io import BytesIO
         from flask import send_file
         
-        pdf_bytes = pdf.output()
+        # fpdf 1.x devuelve str; convertir a bytes para send_file
+        pdf_bytes = pdf.output(dest='S').encode('latin-1')
         filename = f"Horario_{titulo.replace(' ', '_').replace('-', '')}.pdf"
-        
+
+        if session.get('user_id'):
+            log_action(
+                session.get('user_id'),
+                'Export',
+                f"Descarga PDF horario ({titulo})",
+                tabla_afectada='horarios',
+                exito=True
+            )
+
         return send_file(
             BytesIO(pdf_bytes),
             mimetype='application/pdf',
@@ -434,6 +500,14 @@ def api_exportar_horario_pdf():
             download_name=filename
         )
     except Exception as e:
+        if session.get('user_id'):
+            log_action(
+                session.get('user_id'),
+                'Error',
+                'Fallo al exportar PDF de horario',
+                tabla_afectada='horarios',
+                exito=False
+            )
         return _error_interno(e)
     except Exception as e:
         return _error_interno(e)

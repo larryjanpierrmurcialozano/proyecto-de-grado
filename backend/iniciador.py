@@ -2,7 +2,7 @@
 # DOCSTRY - BACKEND FLASK
 # ══════════════════════════════════════════════════════════════════════════════
 # Sistema de Gestión Académica
-# Versión: 3.0 (Blueprints)
+# Versión: 4.0 BETA (Blueprints)
 # ══════════════════════════════════════════════════════════════════════════════
 
 from flask import Flask, jsonify, request, session, send_from_directory
@@ -30,7 +30,6 @@ from routes.calificaciones import calificaciones_bp
 from routes.asistencia import asistencia_bp
 from routes.periodos import periodos_bp
 from routes.observador import observador_bp
-from routes.mis_clases import mis_clases_bp
 # [DESHABILITADO PARA TECNÓLOGO] from routes.servicio_drive import drive_bp
 
 
@@ -77,7 +76,6 @@ app.register_blueprint(reportes_bp)      # Reportes + Logs + Envío de correo
 app.register_blueprint(asistencia_bp)    # Módulo de Asistencia
 app.register_blueprint(periodos_bp)      # Módulo de Períodos
 app.register_blueprint(observador_bp)    # Módulo Observador
-app.register_blueprint(mis_clases_bp)    # Portal personal de docentes - sus clases
 # [DESHABILITADO PARA TECNÓLOGO] app.register_blueprint(drive_bp)        # Módulo de integración con Google Drive
 
 # ══════════════════════════════════════════════════════════════════════════════

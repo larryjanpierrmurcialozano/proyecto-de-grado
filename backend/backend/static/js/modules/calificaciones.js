@@ -15,6 +15,8 @@ const CalificacionesModule = {
     filtros: { grado: null, grupo: null, materia: null, periodo: null },
     fechaActividadSeleccionada: null,
     acuerdoPdfUrl: null,
+    _tableEventsBound: false,
+    _tableWrapper: null,
 
     async init() {
         await this.render();
@@ -37,8 +39,53 @@ const CalificacionesModule = {
         }
     },
 
+    async recargarModulo(mantenerFiltros = true) {
+        const filtrosPrev = { ...this.filtros };
+        const fechaPrev = this.fechaActividadSeleccionada;
+
+        this._tableEventsBound = false;
+        this._tableWrapper = null;
+
+        await this.render();
+        this.bindEvents();
+        await this.cargarFiltrosBase();
+        this.fechaActividadSeleccionada = fechaPrev;
+
+        if (!mantenerFiltros) return;
+
+        if (filtrosPrev.grado) {
+            const selGrado = document.getElementById('cal-filtro-grado');
+            if (selGrado) selGrado.value = filtrosPrev.grado;
+            await this.cambiarGrado(filtrosPrev.grado);
+        }
+
+        if (filtrosPrev.grupo) {
+            const selGrupo = document.getElementById('cal-filtro-grupo');
+            if (selGrupo) selGrupo.value = filtrosPrev.grupo;
+            await this.cambiarGrupo(filtrosPrev.grupo);
+        }
+
+        if (filtrosPrev.materia) {
+            const selMateria = document.getElementById('cal-filtro-materia');
+            if (selMateria) selMateria.value = filtrosPrev.materia;
+            this.cambiarMateria(filtrosPrev.materia);
+        }
+
+        if (filtrosPrev.periodo) {
+            const selPeriodo = document.getElementById('cal-filtro-periodo');
+            if (selPeriodo) selPeriodo.value = filtrosPrev.periodo;
+            this.cambiarPeriodo(filtrosPrev.periodo);
+        }
+
+        if (filtrosPrev.grupo && filtrosPrev.materia && filtrosPrev.periodo) {
+            await this.cargarTabla();
+        }
+    },
+
     bindEvents() {
         document.getElementById('btn-sincronizar').addEventListener('click', () => this.sincronizarCarpetas());
+        const btnBoletines = document.getElementById('btn-sincronizar-boletines');
+        if (btnBoletines) btnBoletines.addEventListener('click', () => this.sincronizarBoletines());
         document.getElementById('btn-agregar-acuerdo').addEventListener('click', () => this.seleccionarAcuerdoPdf());
         document.getElementById('btn-agregar-actividad').addEventListener('click', () => this.abrirModalActividad());
         document.getElementById('btn-guardar-todo').addEventListener('click', () => this.guardarTodo());
@@ -69,6 +116,25 @@ const CalificacionesModule = {
         document.getElementById('btn-cancelar-modal-actividad').addEventListener('click', () => this.cerrarModalActividad());
         
         // Los event listeners de la tabla se attachan en renderTabla() via bindTableEvents()
+    },
+
+    _resetSyncButtons() {
+        const btnSync = document.getElementById('btn-sincronizar');
+        if (btnSync) {
+            btnSync.disabled = false;
+            btnSync.innerHTML = '<i class="bx bx-sync"></i> Sincronización Total (Escritorio)';
+        }
+
+        const btnBoletines = document.getElementById('btn-sincronizar-boletines');
+        if (btnBoletines) {
+            btnBoletines.disabled = false;
+            btnBoletines.innerHTML = '<i class="fas fa-file-pdf"></i> Boletines (Escritorio)';
+        }
+    },
+
+    _recargarModuloPostSync() {
+        this._resetSyncButtons();
+        window.location.reload();
     },
 
     async cargarFiltrosBase() {
@@ -329,9 +395,12 @@ const CalificacionesModule = {
 
     async sincronizarCarpetas() {
         const btn = document.getElementById('btn-sincronizar');
+        let refrescar = false;
         try {
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
+
+            mostrarAlerta('Sincronizando (puede tardar varios minutos). Puedes seguir trabajando; al finalizar se recarga la página.', 'info');
 
             const res = await fetch('/api/calificaciones/sincronizar_carpetas', { method: 'POST' });
             const data = await res.json();
@@ -339,12 +408,41 @@ const CalificacionesModule = {
 
             const creados = data.created_files ? data.created_files.length : 0;
             const errores = data.errors ? data.errors.length : 0;
-            mostrarAlerta(`Sincronización completa. Archivos: ${creados}. Errores: ${errores}.`, errores > 0 ? 'warning' : 'success');
+            mostrarAlerta(`Sincronización de planillas completa. Archivos: ${creados}. Errores: ${errores}.`, errores > 0 ? 'warning' : 'success');
+
+            refrescar = true;
         } catch (error) {
             mostrarAlerta(error.message || 'Error al sincronizar carpetas', 'error');
         } finally {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bx bx-sync"></i> Sincronización Total (Escritorio)';
+            if (refrescar) {
+                this._recargarModuloPostSync();
+            } else {
+                this._resetSyncButtons();
+            }
+        }
+    },
+
+    async sincronizarBoletines() {
+        const btn = document.getElementById('btn-sincronizar-boletines');
+        if (!btn) return;
+        let refrescar = false;
+        try {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Boletines...';
+            mostrarAlerta('Sincronizando boletines (puede tardar varios minutos). Puedes seguir trabajando; al finalizar se recarga la página.', 'info');
+            const res = await API.sincronizarBoletinesTodo();
+            const bCre = res.archivos_creados || 0;
+            const bAct = res.archivos_actualizados || 0;
+            mostrarAlerta(`Boletines sincronizados. Nuevos: ${bCre}. Actualizados: ${bAct}.`, 'success');
+            refrescar = true;
+        } catch (error) {
+            mostrarAlerta(error.message || 'Error al sincronizar boletines', 'error');
+        } finally {
+            if (refrescar) {
+                this._recargarModuloPostSync();
+            } else {
+                this._resetSyncButtons();
+            }
         }
     },
 
@@ -357,6 +455,7 @@ const CalificacionesModule = {
         }
 
         const btn = document.getElementById('btn-generar');
+        let refrescar = false;
         try {
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
@@ -385,12 +484,16 @@ const CalificacionesModule = {
             window.URL.revokeObjectURL(urlBlob);
 
             mostrarAlerta('Planilla institucional generada con éxito.', 'success');
+            refrescar = true;
         } catch (error) {
             console.error(error);
             mostrarAlerta('Error: ' + error.message, 'error');
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-file-excel"></i> Generar / Descargar';
+            if (refrescar) {
+                setTimeout(() => this.recargarModulo(), 150);
+            }
         }
     },
 
@@ -403,6 +506,7 @@ const CalificacionesModule = {
         }
 
         const btn = document.getElementById('btn-generar');
+        let refrescar = false;
         try {
             const periodoSeguro = parseInt(periodo || this.periodos?.[0]?.id_periodo || 1, 10) || 1;
             const fechaHoy = new Date().toISOString().split('T')[0];
@@ -495,12 +599,16 @@ const CalificacionesModule = {
             window.URL.revokeObjectURL(url);
 
             mostrarAlerta('Plantilla generada y descargada correctamente.', 'success');
+            refrescar = true;
         } catch (error) {
             console.error(error);
             mostrarAlerta(error.message || 'Error al generar plantilla base', 'error');
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-file-excel"></i> Descargar Excel Físico';
+            if (refrescar) {
+                setTimeout(() => this.recargarModulo(), 150);
+            }
         }
     },
 
@@ -734,27 +842,28 @@ const CalificacionesModule = {
 
     bindTableEvents() {
         const wrapper = document.getElementById('cal-tabla-wrapper');
+        if (!wrapper) return;
+        if (this._tableEventsBound && this._tableWrapper === wrapper) return;
 
-        // Dropdown para filtrar actividades
-        const filterSelect = wrapper.querySelector('#cal-activity-filter');
-        if (filterSelect) {
-            filterSelect.addEventListener('change', (e) => {
-                const actId = e.target.value;
-                this.filterActivities(actId);
-            });
-        }
+        wrapper.addEventListener('change', (e) => {
+            if (e.target && e.target.id === 'cal-activity-filter') {
+                this.filterActivities(e.target.value);
+            }
+        });
 
-        // Botones editar/eliminar en encabezados de actividades
         wrapper.addEventListener('click', (e) => {
             const btn = e.target.closest('button[data-accion]');
             if (!btn) return;
-            
+
             const accion = btn.dataset.accion;
             const idAct = parseInt(btn.dataset.idActividad || 0, 10);
-            
+
             if (accion === 'editar') this.editarActividad(idAct);
             if (accion === 'eliminar') this.eliminarActividad(idAct);
         });
+
+        this._tableEventsBound = true;
+        this._tableWrapper = wrapper;
     },
 
     filterActivities(actividadId) {
@@ -995,6 +1104,12 @@ const CalificacionesModule = {
             mostrarAlerta(`Actividad eliminada${res.notas_eliminadas ? `. Notas eliminadas: ${res.notas_eliminadas}` : ''}`, 'success');
             await this.cargarTabla();
         } catch (error) {
+            const msg = String(error.message || '').toLowerCase();
+            if (msg.includes('no encontrado')) {
+                mostrarAlerta('La actividad ya fue eliminada', 'info');
+                await this.cargarTabla();
+                return;
+            }
             mostrarAlerta(error.message || 'Error al eliminar actividad', 'error');
         }
     },

@@ -8,6 +8,7 @@ from datetime import datetime
 import io
 import os
 import openpyxl
+from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 from uuid import uuid4
 from werkzeug.utils import secure_filename
@@ -353,7 +354,7 @@ def api_asistencia_guardar():
 
         # Obtener o crear plantilla para este docente/materia/periodo
         cursor.execute("""
-            SELECT id_plantilla FROM plantillas_docente
+            SELECT id_plantilla FROM plantillas_asistencias
             WHERE id_usuario = %s AND id_materia = %s AND id_periodo = %s
             LIMIT 1
         """, (user_id, materia_id, periodo_id))
@@ -366,7 +367,7 @@ def api_asistencia_guardar():
             nombre_mat = mat['nombre_materia'] if mat else 'Materia'
 
             cursor.execute("""
-                INSERT INTO plantillas_docente (id_usuario, nombre_plantilla, descripcion, id_materia, id_periodo)
+                INSERT INTO plantillas_asistencias (id_usuario, nombre_plantilla, descripcion, id_materia, id_periodo)
                 VALUES (%s, %s, %s, %s, %s)
             """, (user_id, f'Asistencia {nombre_mat}', f'Control de asistencia - {nombre_mat}', materia_id, periodo_id))
             conn.commit()
@@ -1109,7 +1110,10 @@ def api_reporte_general_asistencia():
         _set_cell_value_safe(ws, 'F2', f"GRADO: {info.get('numero_grado') or ''}")  # F2
         _set_cell_value_safe(ws, 'H2', f"GRUPO: {info.get('codigo_grupo') or ''}")  # H2
         _set_cell_value_safe(ws, 'J2', f"FECHA: {fecha_impresion}")  # J2
-        _set_cell_value_safe(ws, 'Q2', f"{info.get('nombre_materia') or ''}")  # Q2
+        materia_texto = f"{info.get('nombre_materia') or ''}".strip()
+        # La celda de materia en la plantilla esta en O2:P3 (merged).
+        _set_cell_value_safe(ws, 'O2', materia_texto)
+        ws['O2'].alignment = Alignment(horizontal='center', vertical='center', wrap_text=True, shrink_to_fit=True)
         _set_cell_value_safe(ws, 'F3', f"DOCENTE: {docente}")  # F3
 
         # RELLENO DE ESTUDIANTES DESDE FILA 8

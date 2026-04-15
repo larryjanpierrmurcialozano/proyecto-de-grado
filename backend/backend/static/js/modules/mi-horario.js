@@ -24,6 +24,9 @@ for (let h = 7; h <= 13; h++) {
     MI_HORAS.push(`${String(h).padStart(2,'0')}:00`);
 }
 
+let MI_HORARIO_DATOS = [];
+let MI_HORARIO_TITULO = 'Mi Horario';
+
 async function renderMiHorario() {
     const content = document.getElementById('main-content');
     content.innerHTML = Helpers.loading();
@@ -31,8 +34,12 @@ async function renderMiHorario() {
     try {
         const res = await API.getMiHorario();
         const bloques = res.horario || [];
+        const nombreDocente = (typeof USUARIO !== 'undefined' && USUARIO.nombre) ? USUARIO.nombre : 'Docente';
+        MI_HORARIO_TITULO = `Mi Horario - ${nombreDocente}`;
+        MI_HORARIO_DATOS = bloques;
 
         if (bloques.length === 0) {
+            MI_HORARIO_DATOS = [];
             content.innerHTML = `
                 <div class="card">
                     <div class="card-header-flex">
@@ -118,9 +125,14 @@ async function renderMiHorario() {
                     <h2 class="card-title" style="border:none;margin:0;padding:0;">
                         <i class="fas fa-calendar-alt"></i> Mi Horario
                     </h2>
-                    <div style="display:flex;gap:1rem;font-size:.9rem;color:var(--cafe-claro);">
-                        <span><i class="fas fa-clock"></i> ${totalHoras} bloque(s)</span>
-                        <span><i class="fas fa-calendar-check"></i> ${diasConClase} día(s) con clases</span>
+                    <div style="display:flex;gap:1rem;align-items:center;">
+                        <div style="display:flex;gap:1rem;font-size:.9rem;color:var(--cafe-claro);">
+                            <span><i class="fas fa-clock"></i> ${totalHoras} bloque(s)</span>
+                            <span><i class="fas fa-calendar-check"></i> ${diasConClase} día(s) con clases</span>
+                        </div>
+                        <button class="btn btn-rojo" onclick="miHorarioExportarPDF()" title="Descargar horario en PDF">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </button>
                     </div>
                 </div>
                 ${gridHtml}
@@ -131,5 +143,52 @@ async function renderMiHorario() {
     } catch (error) {
         content.innerHTML = Helpers.error('No se pudo cargar tu horario.');
         console.error(error);
+    }
+}
+
+function miHorarioExportarPDF() {
+    if (MI_HORARIO_DATOS.length === 0) {
+        mostrarAlerta('No hay horario para exportar.', 'info');
+        return;
+    }
+
+    try {
+        const payload = {
+            horarios: MI_HORARIO_DATOS,
+            titulo: MI_HORARIO_TITULO,
+            tipo: 'docentes'
+        };
+
+        fetch('/api/horarios/exportar-pdf', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Horario_${MI_HORARIO_TITULO.replace(/[\s,]/g, '_')}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            mostrarAlerta('Horario exportado a PDF correctamente', 'exito');
+        })
+        .catch(error => {
+            console.error('Error al descargar PDF:', error);
+            mostrarAlerta('Error al descargar PDF: ' + error.message, 'error');
+        });
+    } catch (e) {
+        console.error('Error:', e);
+        mostrarAlerta('Error al procesar exportacion: ' + e.message, 'error');
     }
 }

@@ -89,10 +89,38 @@
                     <label><i class="fas fa-message"></i> Mensaje</label>
                     <textarea id="reporte-mensaje" placeholder="Escribe el mensaje que deseas enviar..." style="width: 100%; min-height: 120px; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-family: inherit;"></textarea>
                 </div>
+                <div class="form-group">
+                    <label><i class="fas fa-paperclip"></i> Adjuntar PDF (opcional)</label>
+                    <input type="file" id="reporte-adjunto" accept=".pdf" style="width: 100%;">
+                </div>
                 <button type="submit" class="btn btn-verde" style="width: 100%;">
                     <i class="fas fa-send"></i> Enviar Correo
                 </button>
             </form>
+
+            <div class="card" style="margin-top: 1.5rem; padding: 1rem; border: 1px solid #eee;">
+                <h3 style="margin-bottom: 1rem; color: var(--cafe-oscuro);"><i class="fas fa-file-invoice"></i> Boletines</h3>
+                <div class="form-group">
+                    <label><i class="fas fa-users"></i> Grupo</label>
+                    <select id="boletin-grupo-select" style="width: 100%;">
+                        <option value="">-- Selecciona un grupo --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-calendar"></i> Período</label>
+                    <select id="boletin-periodo-select" style="width: 100%;">
+                        <option value="">-- Selecciona un período --</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="button" id="btn-boletin-generar" class="btn btn-cafe" style="flex: 1;">
+                        <i class="fas fa-cogs"></i> Generar boletines
+                    </button>
+                    <button type="button" id="btn-boletin-enviar" class="btn btn-verde" style="flex: 1;">
+                        <i class="fas fa-paper-plane"></i> Enviar boletines
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>

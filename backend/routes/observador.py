@@ -163,7 +163,9 @@ def _obs_draw_meta_table(pdf, x, y_top, w, rows):
 	row_h = 12
 	table_h = row_h * len(rows)
 	bottom = y_top - table_h
-	mid_x = x + (w / 2)
+	mid_x = x + (w * 0.62)
+	left_max = max(28, int((mid_x - x - 6) / 3.4))
+	right_max = max(20, int((x + w - mid_x - 6) / 3.4))
 
 	pdf.rect(x, bottom, w, table_h)
 	pdf.line(mid_x, bottom, mid_x, y_top)
@@ -175,8 +177,8 @@ def _obs_draw_meta_table(pdf, x, y_top, w, rows):
 	pdf.setFont('Helvetica', 6.9)
 	for idx, row in enumerate(rows):
 		y_text = y_top - (row_h * idx) - 8.3
-		left = f"{row['left_label']}: {_obs_fit(row['left_value'], 46)}"
-		right = f"{row['right_label']}: {_obs_fit(row['right_value'], 32)}"
+		left = f"{row['left_label']}: {_obs_fit(row['left_value'], left_max)}"
+		right = f"{row['right_label']}: {_obs_fit(row['right_value'], right_max)}"
 		pdf.drawString(x + 2, y_text, left)
 		pdf.drawString(mid_x + 2, y_text, right)
 
@@ -211,17 +213,17 @@ def _obs_draw_single_copy(pdf, x, y_top, w, h, data):
 	current_y -= (header_h + 4)
 
 	rows = [
-		{'left_label': 'NOMBRE DEL ESTUDIANTE', 'left_value': data.get('estudiante'), 'right_label': 'SECCION', 'right_value': data.get('seccion')},
-		{'left_label': 'ACUDIENTE', 'left_value': data.get('acudiente'), 'right_label': 'PARENTESCO', 'right_value': data.get('parentesco')},
-		{'left_label': 'DOCENTE', 'left_value': data.get('docente'), 'right_label': 'CELULAR', 'right_value': data.get('celular')},
-		{'left_label': 'GRADO', 'left_value': data.get('grado'), 'right_label': 'ASIGNATURA', 'right_value': data.get('asignatura')},
-		{'left_label': 'FECHA', 'left_value': data.get('fecha'), 'right_label': 'HORA', 'right_value': data.get('hora')}
+		{'left_label': 'ESTUDIANTE', 'left_value': data.get('estudiante'), 'right_label': 'FECHA', 'right_value': data.get('fecha')},
+		{'left_label': 'ACUDIENTE', 'left_value': data.get('acudiente'), 'right_label': 'HORA', 'right_value': data.get('hora')},
+		{'left_label': 'PARENTESCO DE ACUDIENTE', 'left_value': data.get('parentesco'), 'right_label': 'CELULAR', 'right_value': data.get('celular')},
+		{'left_label': 'GRADO', 'left_value': data.get('grado'), 'right_label': 'DOCENTE', 'right_value': data.get('docente')},
+		{'left_label': 'GRUPO', 'left_value': data.get('grupo'), 'right_label': 'ASIGNATURA', 'right_value': data.get('asignatura')}
 	]
 	table_h = _obs_draw_meta_table(pdf, left, current_y, usable_w, rows)
 	current_y -= (table_h + 4)
 
 	sections = [
-		('DESCRIPCION Y TIPIFICACION DE LA SITUACION DE CONVIVENCIA O ACADEMICA', data.get('descripcion_tipificacion'), 100),
+		('DESCRIPCION Y RESOLUCION', data.get('descripcion_tipificacion'), 100),
 		('DESCARGOS DEL ESTUDIANTE', data.get('descargos'), 88),
 		('ACCIONES PEDAGOGICAS', data.get('acciones_pedagogicas'), 86),
 		('COMPROMISOS Y SEGUIMIENTO', data.get('compromisos_seguimiento'), 86)
@@ -250,7 +252,7 @@ def _obs_build_formato_data(cursor, cols, id_observacion=None):
 	data = {
 		'institucion': 'INSTITUCION EDUCATIVA INEM JULIAN MOTTA SALAS - NEIVA',
 		'estudiante': '',
-		'seccion': '',
+		'grupo': '',
 		'acudiente': '',
 		'parentesco': '',
 		'celular': '',
@@ -278,6 +280,13 @@ def _obs_build_formato_data(cursor, cols, id_observacion=None):
 	if not usuario_col:
 		return None
 
+	has_id_materia = 'id_materia' in cols
+	materia_select = ''
+	materia_join = ''
+	if has_id_materia:
+		materia_select = ', m.nombre_materia AS asignatura_nombre'
+		materia_join = 'LEFT JOIN materias m ON o.id_materia = m.id_materia'
+
 	cursor.execute(
 		f"""
 		SELECT
@@ -290,11 +299,13 @@ def _obs_build_formato_data(cursor, cols, id_observacion=None):
 			gr.nombre_grado,
 			u.nombre AS registrado_nombre,
 			u.apellido AS registrado_apellido
+			{materia_select}
 		FROM observador o
 		JOIN estudiantes e ON o.id_estudiante = e.id_estudiante
 		JOIN grupos g ON e.id_grupo = g.id_grupo
 		LEFT JOIN grados gr ON g.id_grado = gr.id_grado
 		LEFT JOIN usuarios u ON o.{usuario_col} = u.id_usuario
+		{materia_join}
 		WHERE o.id_observacion = %s
 		LIMIT 1
 		""",
@@ -330,11 +341,11 @@ def _obs_build_formato_data(cursor, cols, id_observacion=None):
 
 	data.update({
 		'estudiante': f"{_obs_text(row.get('estudiante_apellido'))}, {_obs_text(row.get('estudiante_nombre'))}".strip(', '),
-		'seccion': _obs_text(row.get('codigo_grupo')),
-		'acudiente': _obs_text(row.get('acudiente_nombre')),
+		'grupo': _obs_text(row.get('codigo_grupo')),
 		'celular': _obs_text(row.get('acudiente_telefono')),
 		'docente': f"{_obs_text(row.get('registrado_nombre'))} {_obs_text(row.get('registrado_apellido'))}".strip(),
 		'grado': _obs_text(row.get('nombre_grado')),
+		'asignatura': _obs_text(row.get('asignatura_nombre') or row.get('asignatura')),
 		'fecha': _obs_date_str(fecha_obs),
 		'hora': _obs_time_str(fecha_obs),
 		'descripcion_tipificacion': '\n\n'.join(partes_descripcion),
@@ -458,13 +469,16 @@ def api_observador_crear():
 			'categoria', 'compromiso', 'descargos_estudiante', 'protocolo_tipo', 'estado_caso',
 			'medidas_inmediatas', 'seguimiento', 'fecha_seguimiento',
 			'entidad_remitida', 'numero_radicado', 'fecha_remision',
-			'acudiente_notificado', 'fecha_notificacion'
+			'acudiente_notificado', 'fecha_notificacion',
+			'id_materia', 'asignatura'
 		]
 
 		for field in optional_fields:
 			if field in cols and data.get(field) not in (None, ''):
 				if field == 'acudiente_notificado':
 					payload[field] = 1 if bool(data.get(field)) else 0
+				elif field == 'id_materia':
+					payload[field] = int(data.get(field))
 				else:
 					payload[field] = data.get(field)
 
@@ -507,6 +521,8 @@ def api_observador_actualizar(id_observacion):
 			'descargos_estudiante': 'descargos_estudiante',
 			'categoria': 'categoria',
 			'compromiso': 'compromiso',
+			'id_materia': 'id_materia',
+			'asignatura': 'asignatura',
 			'protocolo_tipo': 'protocolo_tipo',
 			'estado_caso': 'estado_caso',
 			'medidas_inmediatas': 'medidas_inmediatas',
@@ -524,6 +540,8 @@ def api_observador_actualizar(id_observacion):
 				value = data.get(payload_key)
 				if col_name == 'acudiente_notificado':
 					updates[col_name] = 1 if bool(value) else 0
+				elif col_name == 'id_materia' and value not in (None, ''):
+					updates[col_name] = int(value)
 				else:
 					updates[col_name] = value
 

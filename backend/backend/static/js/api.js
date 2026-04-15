@@ -385,10 +385,6 @@ const API = {
     // ═══════════════════════════════════════════════════════════════════
     // DOCENTE - SECCIONES EXCLUSIVAS
     // ═══════════════════════════════════════════════════════════════════
-    async getMisClases() {
-        return this.request('/api/docente/mis-clases');
-    },
-
     async getMisMaterias() {
         return this.request('/api/docente/mis-materias');
     },
@@ -415,6 +411,27 @@ const API = {
         });
     },
 
+    async sincronizarBoletinesGrupo(data) {
+        return this.request('/api/boletines/sincronizar-grupo', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+
+    async enviarBoletinesGrupo(data) {
+        return this.request('/api/boletines/enviar-grupo', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+
+    async sincronizarBoletinesTodo(data = {}) {
+        return this.request('/api/boletines/sincronizar-todo', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+
     // ═══════════════════════════════════════════════════════════════════
     // ROLES
     // ═══════════════════════════════════════════════════════════════════
@@ -422,19 +439,5 @@ const API = {
         return this.request('/api/roles');
     },
 
-    // ═══════════════════════════════════════════════════════════════════
-    // MIS CLASES (Portal personal del docente)
-    // ═══════════════════════════════════════════════════════════════════
-    async getMisClases() {
-        return this.request('/api/mis_clases');
-    },
-
-    async getClaseDetalle(asignacionId) {
-        return this.request(`/api/mis_clases/${asignacionId}`);
-    },
-
-    async descargarExcelClase(asignacionId, periodo = 1) {
-        // Este método devuelve directamente la URL para descargar
-        return `/api/mis_clases/${asignacionId}/descargar-excel?periodo=${periodo}`;
-    }
+    
 };

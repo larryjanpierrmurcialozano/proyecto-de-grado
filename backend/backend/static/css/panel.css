@@ -887,6 +887,15 @@ tr:hover {
     background: var(--rojo-hover);
 }
 
+.btn-accion-azul {
+    background: #1e88e5;
+    color: var(--blanco);
+}
+
+.btn-accion-azul:hover {
+    background: #1565c0;
+}
+
 /* Paginación */
 .paginacion {
     display: flex;
@@ -1167,96 +1176,6 @@ tr:hover {
         transform: translateX(100%);
         opacity: 0;
     }
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   MIS CLASES - DOCENTE
-   ═══════════════════════════════════════════════════════════════════ */
-.mis-clases-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.clase-card {
-    background: var(--blanco);
-    border: 2px solid var(--crema);
-    border-radius: 12px;
-    overflow: hidden;
-    transition: all 0.3s;
-}
-
-.clase-card:hover {
-    border-color: var(--cafe-suave);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-}
-
-.clase-header {
-    background: linear-gradient(135deg, var(--cafe-oscuro), var(--cafe-medio));
-    padding: 1rem 1.25rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.clase-grado {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: white;
-}
-
-.clase-body {
-    padding: 1.25rem;
-}
-
-.clase-body p {
-    margin: 0.5rem 0;
-    color: var(--cafe-medio);
-    font-size: 0.95rem;
-}
-
-.clase-body p i {
-    width: 20px;
-    color: var(--cafe-suave);
-}
-
-.clase-footer {
-    padding: 1rem 1.25rem;
-    background: var(--crema);
-    display: flex;
-    gap: 0.5rem;
-}
-
-.resumen-clases {
-    display: flex;
-    gap: 2rem;
-    padding: 1.5rem;
-    background: linear-gradient(135deg, var(--cafe-oscuro), var(--cafe-medio));
-    border-radius: 12px;
-    color: white;
-}
-
-.resumen-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.resumen-item i {
-    font-size: 2rem;
-    opacity: 0.8;
-}
-
-.resumen-item strong {
-    font-size: 1.75rem;
-    display: block;
-}
-
-.resumen-item span {
-    font-size: 0.85rem;
-    opacity: 0.9;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

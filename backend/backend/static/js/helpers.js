@@ -65,9 +65,25 @@ const Helpers = {
         html += '</div>';
         return html;
     },
-
-    // Mostrar loading
+    //ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR
+    // Mostrar loading //SE ESPERA QUE EL DOCUMENTO CARGUE EN CIERTA CANTIDAD DE SEGUNDOS, SE PENSABA PREPARAR UNA FUNCION 
+    // SETTIMEOUT INDIVIDUAL PARA EL MODULO DE ESTUDIANTES, CORRECCIONES QUE NO TIENEN URGENCIAS, SI HAY QUEJAS POR EL TIEMPO
+    // DE CARGA DEL MODULO DE ESTUDIANTES, PUES, QUE LA CHUPEN, DESPUES CORREGIMOS ESTO, MAS TARDE REVISAREMOS SI ES POR 
+    // DEPENDENCIAS O CAGADAS METIENDO TANTA VAINA DE CARGAS PARA LOS MODULOS, SE PUEDE PROBAR BORRANDO TODOS ESOS, BUEN PLAN,
+    // ESO HAREMOS, BORRAREMOS TODOS LOS RELOAD Y LUEGO LOS MIRARE, ESTO SERA DESPUES DE LA ACTUALIZACION DEL BACKEND.
+    //ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR
     loading() {
+  const favicon = document.getElementById('fas fa-spinner fa-spin fa-3x');
+  
+  // Tiempo de espera: 5000 milisegundos = 5 segundos
+  setTimeout(function() {
+    // Cambia la ruta a un nuevo icono o déjalo vacío para que desaparezca
+    Helpers-loading.href, "fas fa-spinner fa-spin fa-3x"; 
+    console.log("El favicon ha cambiado tras 5 segundos.");
+  }, 5);
+    },
+    loading() {
+
         return `
             <div class="helper-loading">
                 <i class="fas fa-spinner fa-spin fa-3x"></i>
@@ -75,7 +91,7 @@ const Helpers = {
             </div>
         `;
     },
-
+    //ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR//ERROR
     // Mostrar error
     error(mensaje) {
         return `

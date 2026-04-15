@@ -137,13 +137,13 @@ from copy import copy
 import openpyxl
 from flask import Blueprint, jsonify, request, send_file, session, after_this_request
 from datetime import datetime
-from openpyxl.styles import Font, PatternFill, Alignment, Protection
+from openpyxl.styles import Font, PatternFill, Alignment, Protection, Border, Side
 from openpyxl.worksheet.protection import SheetProtection
-from openpyxl.utils import get_column_letter
+from openpyxl.utils import get_column_letter, range_boundaries
 
 # Importaciones del proyecto
 from utils.database import get_db
-from utils.helpers import _error_interno
+from utils.helpers import _error_interno, log_action
 
 calificaciones_bp = Blueprint('calificaciones', __name__)
 
@@ -475,6 +475,54 @@ def _replace_placeholders_worksheet(ws, mapping):
                     cell.value = nuevo_valor
 
 
+def _apply_label_values_worksheet(ws, *, periodo_label, anio, nombre_grado, grupo_label, nombre_docente, nombre_materia):
+    """Rellena textos fijos en plantilla con datos reales (PERIODO, GRADO, DOCENTE, MATERIA, GRUPO)."""
+    merged_ranges = list(ws.merged_cells.ranges)
+
+    def _set_value(row, col, value):
+        try:
+            cell = ws.cell(row=row, column=col)
+            if isinstance(cell, openpyxl.cell.cell.MergedCell):
+                for merged_range in merged_ranges:
+                    if (
+                        merged_range.min_row <= row <= merged_range.max_row
+                        and merged_range.min_col <= col <= merged_range.max_col
+                    ):
+                        row, col = merged_range.min_row, merged_range.min_col
+                        break
+            ws.cell(row=row, column=col, value=value)
+        except Exception:
+            pass
+
+    if not grupo_label:
+        grupo_text = ''
+    elif grupo_label.lower().startswith('grupo'):
+        grupo_text = grupo_label
+    else:
+        grupo_text = f"Grupo {grupo_label}"
+
+    periodo_text = f"PERIODO: {periodo_label} - {anio}" if anio else f"PERIODO: {periodo_label}"
+    grado_text = f"GRADO: {nombre_grado}" if nombre_grado else "GRADO:"
+    docente_text = f"DOCENTE: {nombre_docente}" if nombre_docente else "DOCENTE:"
+
+    for row in ws.iter_rows(min_row=1, max_row=6, min_col=1, max_col=ws.max_column):
+        for cell in row:
+            if not isinstance(cell.value, str):
+                continue
+            valor = cell.value.strip()
+            lower = valor.lower()
+            if lower.startswith('periodo:'):
+                _set_value(cell.row, cell.column, periodo_text)
+            elif lower.startswith('grado:'):
+                _set_value(cell.row, cell.column, grado_text)
+            elif lower.startswith('docente:'):
+                _set_value(cell.row, cell.column, docente_text)
+            elif lower.startswith('grupo'):
+                _set_value(cell.row, cell.column, grupo_text)
+            elif 'nombre de la materia' in lower:
+                _set_value(cell.row, cell.column, nombre_materia or '')
+
+
 def _detectar_layout_plantilla(ws):
     """Layout fijo de la plantilla institucional."""
     return {
@@ -635,6 +683,7 @@ def _generar_planilla_desde_plantilla(grupo_id, materia_id, periodo_id, fecha_ac
             for n in cursor.fetchall() or []:
                 notas_map[(int(n['id_estudiante']), int(n['id_actividad']))] = n.get('puntaje_obtenido')
 
+        # SIEMPRE usar plantilla para mantener formato formal/profesional
         wb = openpyxl.load_workbook(plantilla_path)
         ws = wb.active
 
@@ -655,7 +704,7 @@ def _generar_planilla_desde_plantilla(grupo_id, materia_id, periodo_id, fecha_ac
         grupo_label = f"Grupo {info_grupo.get('codigo_grupo', '')}".strip()
 
         fecha_inicio = info_periodo.get('fecha_inicio')
-        anio = str(getattr(fecha_inicio, 'year', datetime.now().year))
+        anio = str(datetime.now().year)
         fecha_actividad = _to_iso_date_text(fecha_actividad, datetime.now().strftime('%Y-%m-%d'))
 
         for act in actividades:
@@ -680,8 +729,17 @@ def _generar_planilla_desde_plantilla(grupo_id, materia_id, periodo_id, fecha_ac
 
         _replace_placeholders_worksheet(ws, mapeo_datos)
 
+        _apply_label_values_worksheet(
+            ws,
+            periodo_label=periodo_label,
+            anio=anio,
+            nombre_grado=nombre_grado,
+            grupo_label=grupo_label,
+            nombre_docente=nombre_docente,
+            nombre_materia=info_materia.get('nombre_materia', ''),
+        )
+
         # Fallback explícito para la nueva casilla de Grupo (fila 2, columnas G-H).
-        # Si el placeholder no existe en plantilla, dejar el valor directamente en G2.
         try:
             ws.cell(row=2, column=7, value=grupo_label)
         except Exception:
@@ -689,15 +747,112 @@ def _generar_planilla_desde_plantilla(grupo_id, materia_id, periodo_id, fecha_ac
 
         layout = _detectar_layout_plantilla(ws)
 
-        # La plantilla nueva define 10 columnas fijas para actividades (D..M).
-        # No insertar columnas para no romper diseño ni formato de impresión.
-        actividades = actividades[:10]
         actividades_total = len(actividades)
-        actividad_cols = list(range(4, 4 + actividades_total)) if actividades_total else []
-        cols_actividades_plantilla = list(range(4, 14))  # D..M (10 actividades)
-        col_equivalencia = 14  # N
-        col_final_nota = 15    # O
-        col_fallas = 16        # P
+        actividad_start_col = 4  # Columna D
+
+        def _find_col_by_header(row_idx, needle):
+            if not needle:
+                return None
+            target = str(needle).strip().lower()
+            for cell in ws[row_idx]:
+                if cell.value is None:
+                    continue
+                if target in str(cell.value).strip().lower():
+                    return int(cell.column)
+            return None
+
+        base_equiv_col = _find_col_by_header(layout['header_row'], 'equivalencia')
+        base_nota_col = _find_col_by_header(layout['header_row'], 'nota')
+        base_fallas_col = _find_col_by_header(layout['header_row'], 'fallas')
+
+        if base_equiv_col is None:
+            base_equiv_col = actividad_start_col + 10
+        if base_nota_col is None:
+            base_nota_col = base_equiv_col + 1
+        if base_fallas_col is None:
+            base_fallas_col = base_equiv_col + 2
+
+        base_actividades_count = max(base_equiv_col - actividad_start_col, 0)
+        extra_cols = max(actividades_total - base_actividades_count, 0)
+
+        if extra_cols > 0:
+            max_col_before = ws.max_column
+            width_map = {}
+            for col_idx in range(base_equiv_col, max_col_before + 1):
+                letter = get_column_letter(col_idx)
+                width = ws.column_dimensions[letter].width
+                if width is not None:
+                    width_map[col_idx] = width
+
+            right_merged = []
+            for merged_range in list(ws.merged_cells.ranges):
+                if merged_range.min_col >= base_equiv_col:
+                    right_merged.append(str(merged_range))
+
+            for merged_range in right_merged:
+                try:
+                    ws.unmerge_cells(merged_range)
+                except Exception:
+                    pass
+
+            ws.insert_cols(base_equiv_col, extra_cols)
+            ref_col = base_equiv_col - 1
+            ref_letter = get_column_letter(ref_col)
+            ref_width = ws.column_dimensions[ref_letter].width
+            header_merge_start = layout['header_row']
+            header_merge_end = layout['header_row'] + 1
+            style_start_row = max(layout['header_row'] - 1, 1)
+            style_end_row = max(layout['start_row'] + max(len(estudiantes), 1) + 80, layout['start_row'] + 1)
+
+            for i in range(extra_cols):
+                new_col = base_equiv_col + i
+                new_letter = get_column_letter(new_col)
+                if ref_width:
+                    ws.column_dimensions[new_letter].width = ref_width
+
+                for row_idx in range(style_start_row, style_end_row + 1):
+                    src_cell = ws.cell(row=row_idx, column=ref_col)
+                    dst_cell = ws.cell(row=row_idx, column=new_col)
+                    dst_cell.font = copy(src_cell.font)
+                    dst_cell.fill = copy(src_cell.fill)
+                    dst_cell.border = copy(src_cell.border)
+                    dst_cell.alignment = copy(src_cell.alignment)
+                    dst_cell.number_format = src_cell.number_format
+                    dst_cell.protection = copy(src_cell.protection)
+
+                try:
+                    ws.merge_cells(
+                        start_row=header_merge_start,
+                        start_column=new_col,
+                        end_row=header_merge_end,
+                        end_column=new_col,
+                    )
+                except Exception:
+                    pass
+
+            for merged_range in right_merged:
+                try:
+                    min_col, min_row, max_col, max_row = range_boundaries(merged_range)
+                    ws.merge_cells(
+                        start_row=min_row,
+                        start_column=min_col + extra_cols,
+                        end_row=max_row,
+                        end_column=max_col + extra_cols,
+                    )
+                except Exception:
+                    pass
+
+            for col_idx, width in width_map.items():
+                new_idx = col_idx + extra_cols
+                new_letter = get_column_letter(new_idx)
+                ws.column_dimensions[new_letter].width = width
+
+        actividad_cols = list(range(actividad_start_col, actividad_start_col + actividades_total)) if actividades_total else []
+        col_equivalencia = base_equiv_col + extra_cols
+        col_final_nota = base_nota_col + extra_cols
+        col_fallas = base_fallas_col + extra_cols
+
+        merged_ranges = list(ws.merged_cells.ranges)
 
         def _formula_equivalencia(row_num):
             if not actividad_cols or not actividades:
@@ -726,47 +881,128 @@ def _generar_planilla_desde_plantilla(grupo_id, materia_id, periodo_id, fecha_ac
             return f"=IFERROR(AVERAGE(D{row_num}:{ultima_col}{row_num}),\"\")"
 
         max_clear_row = max(layout['start_row'] + max(len(estudiantes), 1) + 80, layout['start_row'] + 1)
+        cod_row = layout['header_row'] - 1
+        estudiantes_row = layout['header_row'] + 1
         columnas_a_limpiar = [
             layout['col_cod'],
             layout['col_estudiantes'],
             col_equivalencia,
             col_final_nota,
             col_fallas,
-        ] + cols_actividades_plantilla
+        ] + actividad_cols
+
+        def _get_merged_anchor(row, col):
+            for merged_range in merged_ranges:
+                if (
+                    merged_range.min_row <= row <= merged_range.max_row
+                    and merged_range.min_col <= col <= merged_range.max_col
+                ):
+                    return merged_range.min_row, merged_range.min_col
+            return row, col
+
+        # Función auxiliar para escribir incluso en merged cells (usar la celda ancla)
+        def _safe_set_cell(row, col, value):
+            try:
+                cell = ws.cell(row=row, column=col)
+                if isinstance(cell, openpyxl.cell.cell.MergedCell):
+                    row, col = _get_merged_anchor(row, col)
+                ws.cell(row=row, column=col, value=value)
+            except Exception:
+                pass
 
         for fila in range(layout['start_row'], max_clear_row + 1):
             for col in columnas_a_limpiar:
-                ws.cell(row=fila, column=col, value=None)
+                _safe_set_cell(fila, col, None)
 
-        # Encabezados/fechas: limpiar solo zona de actividades para que no herede basura previa.
-        for col in cols_actividades_plantilla:
-            ws.cell(row=layout['header_row'], column=col, value=None)
-            ws.cell(row=5, column=col, value=None)
+        # Encabezados COD y ESTUDIANTES
+        _safe_set_cell(cod_row, layout['col_cod'], "COD")
+        _safe_set_cell(estudiantes_row, layout['col_estudiantes'], "ESTUDIANTES")
+        
+        # Encabezados/fechas de actividades
+        for col in actividad_cols:
+            _safe_set_cell(layout['header_row'], col, None)
+            _safe_set_cell(cod_row, col, None)
 
         for idx, col in enumerate(actividad_cols):
-            ws.cell(row=layout['header_row'], column=col, value=actividades[idx].get('nombre_actividad'))
-            ws.cell(row=5, column=col, value=actividades[idx].get('fecha_actividad') or fecha_actividad)
+            _safe_set_cell(layout['header_row'], col, actividades[idx].get('nombre_actividad'))
+            _safe_set_cell(cod_row, col, actividades[idx].get('fecha_actividad') or fecha_actividad)
+        
+        # Encabezados finales - escribir directamente (forzar sin validar merged cells)
+        try:
+            ws.cell(row=layout['header_row'], column=col_equivalencia, value="EQUIVALENCIA PORCENTUAL")
+        except:
+            pass
+        try:
+            ws.cell(row=layout['header_row'], column=col_final_nota, value="NOTA")
+        except:
+            pass
+        try:
+            ws.cell(row=layout['header_row'], column=col_fallas, value="FALLAS")
+        except:
+            pass
 
         for offset, est in enumerate(estudiantes):
             row_num = layout['start_row'] + offset
             est_id = int(est['id_estudiante'])
             nombre = f"{(est.get('apellido') or '').strip()} {(est.get('nombre') or '').strip()}".strip()
 
-            ws.cell(row=row_num, column=layout['col_cod'], value=est_id)
-            ws.cell(row=row_num, column=layout['col_estudiantes'], value=nombre)
-            ws.cell(row=row_num, column=col_fallas, value=int(est.get('fallas') or 0))
+            _safe_set_cell(row_num, layout['col_cod'], est_id)
+            _safe_set_cell(row_num, layout['col_estudiantes'], nombre)
+            _safe_set_cell(row_num, col_fallas, int(est.get('fallas') or 0))
 
             formula_equiv = _formula_equivalencia(row_num)
             if formula_equiv:
-                ws.cell(row=row_num, column=col_equivalencia, value=formula_equiv)
+                _safe_set_cell(row_num, col_equivalencia, formula_equiv)
 
             formula_final = _formula_nota_final(row_num)
             if formula_final:
-                ws.cell(row=row_num, column=col_final_nota, value=formula_final)
+                _safe_set_cell(row_num, col_final_nota, formula_final)
 
             for idx, col in enumerate(actividad_cols):
                 id_actividad = int(actividades[idx]['id_actividad'])
-                ws.cell(row=row_num, column=col, value=notas_map.get((est_id, id_actividad)))
+                _safe_set_cell(row_num, col, notas_map.get((est_id, id_actividad)))
+
+        # APLICAR BORDES A LA TABLA (formato profesional para imprimir)
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Bordear la zona de encabezados + datos (solo si no hay borde)
+        def _border_vacio(border):
+            try:
+                return all(
+                    getattr(side, 'style', None) is None
+                    for side in (border.left, border.right, border.top, border.bottom)
+                )
+            except Exception:
+                return True
+
+        tabla_inicio = max(layout['header_row'] - 1, 1)
+        tabla_fin = layout['start_row'] + max(len(estudiantes), 1) - 1
+        for row in range(tabla_inicio, tabla_fin + 1):
+            for col in range(layout['col_cod'], col_fallas + 1):
+                try:
+                    cell = ws.cell(row=row, column=col)
+                    if not isinstance(cell, openpyxl.cell.cell.MergedCell) and _border_vacio(cell.border):
+                        cell.border = thin_border
+                except Exception:
+                    pass
+
+        # Configuracion de impresion: carta horizontal, ajustar a 1 pagina de ancho
+        try:
+            ws.page_setup.orientation = 'landscape'
+            ws.page_setup.paperSize = 1  # Carta
+            ws.page_setup.fitToWidth = 1
+            ws.page_setup.fitToHeight = 0
+            ws.page_margins.left = 0.25
+            ws.page_margins.right = 0.25
+            ws.page_margins.top = 0.5
+            ws.page_margins.bottom = 0.5
+        except Exception:
+            pass
 
         prefijo = f"Planilla_G{info_grupo.get('numero_grado')}_{info_grupo.get('codigo_grupo')}_{info_materia.get('nombre_materia', 'Materia')}"
         prefijo = prefijo.replace(' ', '_').replace('/', '-')
@@ -1351,6 +1587,19 @@ def api_sincronizar_carpetas():
         
         cursor.close()
         conn.close()
+
+        if session.get('user_id'):
+            exito_sync = len(stats.get('errores') or []) == 0
+            log_action(
+                session.get('user_id'),
+                'Export',
+                (
+                    f"Sincronizacion planillas. Nuevos={stats['archivos_creados']} "
+                    f"Actualizados={stats['archivos_actualizados']} SinCambios={stats['archivos_sin_cambios']}"
+                ),
+                tabla_afectada='calificaciones',
+                exito=exito_sync
+            )
                 
         return jsonify({
             'status': 'ok',
@@ -1566,10 +1815,29 @@ def api_guardar_planilla_web():
                  
         conn.commit()
         cursor.close(); conn.close()
+
+        if session.get('user_id'):
+            log_action(
+                session.get('user_id'),
+                'UPDATE',
+                f"Actualizo planilla desde web (g={grado_id}, m={materia_id}, p={periodo_id})",
+                tabla_afectada='calificaciones',
+                registro_id=int(grupo_id),
+                exito=True
+            )
         
         return jsonify({'status': 'ok', 'message': 'Guardado en Excel físico y BD exitosamente'})
 
     except Exception as e:
+        if session.get('user_id'):
+            log_action(
+                session.get('user_id'),
+                'Error',
+                'Fallo al guardar planilla desde web',
+                tabla_afectada='calificaciones',
+                registro_id=int(grupo_id) if grupo_id else None,
+                exito=False
+            )
         import traceback
         traceback.print_exc()
         return _error_interno(e)
@@ -1825,12 +2093,27 @@ def api_subir_planilla():
 
 @calificaciones_bp.route('/api/calificaciones/filtros', methods=['GET'])
 def api_calificaciones_filtros():
-    """Datos base para filtros de la tabla de registro de notas."""
+    """Datos base para filtros de la tabla de registro de notas.
+    Si el usuario es Docente, devuelve solo sus grados asignados."""
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
 
-        cursor.execute("SELECT id_grado, numero_grado, nombre_grado FROM grados ORDER BY numero_grado")
+        # Si es docente, filtrar solo sus grados asignados
+        user_role = str(session.get('user_role') or '').strip().lower()
+        if user_role in ('docente', 'profesor'):
+            user_id = session.get('user_id')
+            cursor.execute("""
+                SELECT DISTINCT g.id_grado, g.numero_grado, g.nombre_grado
+                FROM grados g
+                JOIN asignaciones_docente a ON a.id_grado = g.id_grado
+                WHERE a.id_usuario = %s AND a.estado = 'Activa'
+                ORDER BY g.numero_grado
+            """, (user_id,))
+        else:
+            # Admin/Director/Coordinador ven todos
+            cursor.execute("SELECT id_grado, numero_grado, nombre_grado FROM grados ORDER BY numero_grado")
+        
         grados = cursor.fetchall() or []
 
         cursor.execute("""
@@ -1849,13 +2132,30 @@ def api_calificaciones_filtros():
 
 @calificaciones_bp.route('/api/calificaciones/grupos/<int:grado_id>', methods=['GET'])
 def api_calificaciones_grupos(grado_id):
+    """Grupos de un grado específico.
+    Si el usuario es Docente, devuelve solo sus grupos asignados en ese grado."""
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT id_grupo, codigo_grupo FROM grupos WHERE id_grado = %s ORDER BY codigo_grupo",
-            (grado_id,)
-        )
+        
+        # Si es docente, filtrar solo sus grupos en ese grado
+        user_role = str(session.get('user_role') or '').strip().lower()
+        if user_role in ('docente', 'profesor'):
+            user_id = session.get('user_id')
+            cursor.execute("""
+                SELECT DISTINCT gr.id_grupo, gr.codigo_grupo
+                FROM grupos gr
+                JOIN asignaciones_docente a ON a.id_grupo = gr.id_grupo
+                WHERE gr.id_grado = %s AND a.id_usuario = %s AND a.estado = 'Activa'
+                ORDER BY gr.codigo_grupo
+            """, (grado_id, user_id))
+        else:
+            # Admin/Director/Coordinador ven todos
+            cursor.execute(
+                "SELECT id_grupo, codigo_grupo FROM grupos WHERE id_grado = %s ORDER BY codigo_grupo",
+                (grado_id,)
+            )
+        
         grupos = cursor.fetchall() or []
         cursor.close()
         conn.close()
@@ -1866,24 +2166,43 @@ def api_calificaciones_grupos(grado_id):
 
 @calificaciones_bp.route('/api/calificaciones/materias/<int:grupo_id>', methods=['GET'])
 def api_calificaciones_materias(grupo_id):
-    """Materias preferiblemente asignadas al grupo; fallback a catálogo general."""
+    """Materias asignadas al grupo (y al docente si es Docente).
+    Fallback a catálogo general si no hay asignaciones específicas."""
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
 
-        cursor.execute(
-            """
-            SELECT DISTINCT m.id_materia, m.nombre_materia, m.codigo_materia
-            FROM asignaciones_docente a
-            JOIN materias m ON m.id_materia = a.id_materia
-            WHERE a.id_grupo = %s AND a.estado = 'Activa'
-            ORDER BY m.nombre_materia
-            """,
-            (grupo_id,)
-        )
+        # Si es docente, solo sus materias asignadas en ese grupo
+        user_role = str(session.get('user_role') or '').strip().lower()
+        if user_role in ('docente', 'profesor'):
+            user_id = session.get('user_id')
+            cursor.execute(
+                """
+                SELECT DISTINCT m.id_materia, m.nombre_materia, m.codigo_materia
+                FROM asignaciones_docente a
+                JOIN materias m ON m.id_materia = a.id_materia
+                WHERE a.id_grupo = %s AND a.id_usuario = %s AND a.estado = 'Activa'
+                ORDER BY m.nombre_materia
+                """,
+                (grupo_id, user_id)
+            )
+        else:
+            # Admin/Director/Coordinador ven todas las materias asignadas al grupo
+            cursor.execute(
+                """
+                SELECT DISTINCT m.id_materia, m.nombre_materia, m.codigo_materia
+                FROM asignaciones_docente a
+                JOIN materias m ON m.id_materia = a.id_materia
+                WHERE a.id_grupo = %s AND a.estado = 'Activa'
+                ORDER BY m.nombre_materia
+                """,
+                (grupo_id,)
+            )
+        
         materias = cursor.fetchall() or []
 
         if not materias:
+            # Fallback: todas las materias del catálogo si no hay asignaciones
             cursor.execute(
                 """
                 SELECT m.id_materia, m.nombre_materia, m.codigo_materia
@@ -2406,6 +2725,16 @@ def api_acuerdo_pedagogico_subir():
         ruta = _acuerdo_pdf_path(grupo_id, materia_id, periodo_id)
         archivo.save(ruta)
 
+        if session.get('user_id'):
+            log_action(
+                session.get('user_id'),
+                'Import',
+                f"Subio acuerdo pedagogico (g={grupo_id}, m={materia_id}, p={periodo_id})",
+                tabla_afectada='acuerdo_pedagogico',
+                registro_id=int(materia_id),
+                exito=True
+            )
+
         return jsonify({
             'status': 'ok',
             'message': 'Acuerdo pedagógico guardado correctamente',
@@ -2413,6 +2742,15 @@ def api_acuerdo_pedagogico_subir():
             'ver_url': f"/api/calificaciones/acuerdo-pedagogico/ver?grupo_id={grupo_id}&materia_id={materia_id}&periodo_id={periodo_id}"
         }), 200
     except Exception as e:
+        if session.get('user_id'):
+            log_action(
+                session.get('user_id'),
+                'Error',
+                'Fallo al subir acuerdo pedagogico',
+                tabla_afectada='acuerdo_pedagogico',
+                registro_id=int(materia_id) if materia_id else None,
+                exito=False
+            )
         return _error_interno(e)
     finally:
         if cursor:
@@ -2433,6 +2771,16 @@ def api_acuerdo_pedagogico_ver():
     ruta = _acuerdo_pdf_path(grupo_id, materia_id, periodo_id)
     if not os.path.exists(ruta):
         return jsonify({'error': 'No hay acuerdo pedagógico cargado para este período'}), 404
+
+    if session.get('user_id'):
+        log_action(
+            session.get('user_id'),
+            'Export',
+            f"Descarga acuerdo pedagogico (g={grupo_id}, m={materia_id}, p={periodo_id})",
+            tabla_afectada='acuerdo_pedagogico',
+            registro_id=int(materia_id),
+            exito=True
+        )
 
     return send_file(
         ruta,
@@ -2653,6 +3001,16 @@ def api_listar_periodo(periodo_id):
         
         cursor.close()
         conn.close()
+
+        if session.get('user_id'):
+            log_action(
+                session.get('user_id'),
+                'READ',
+                f"Listado de archivos del periodo {periodo_id}",
+                tabla_afectada='calificaciones_periodos',
+                registro_id=int(periodo_id),
+                exito=True
+            )
         
         PERIODOS_DIR = os.path.join(ESCRITORIO, 'Periodos_DocstrY')
         periodo_folder = os.path.join(PERIODOS_DIR, f"Período_{periodo['numero_periodo']}")
@@ -2683,6 +3041,15 @@ def api_listar_periodo(periodo_id):
             'archivos': sorted(archivos, key=lambda x: x['nombre'])
         }), 200
     except Exception as e:
+        if session.get('user_id'):
+            log_action(
+                session.get('user_id'),
+                'Error',
+                f"Fallo al listar archivos del periodo {periodo_id}",
+                tabla_afectada='calificaciones_periodos',
+                registro_id=int(periodo_id),
+                exito=False
+            )
         return _error_interno(e)
 
 

@@ -17,6 +17,7 @@ async function renderReportes() {
     }
 
     cargarGruposReporte();
+    cargarPeriodosReporte();
 
     // Eventos de radio buttons de tipo de reporte
     document.querySelectorAll('input[name="tipo-reporte"]').forEach(radio => {
@@ -55,6 +56,11 @@ async function renderReportes() {
     });
 
     document.getElementById('form-enviar-reporte').addEventListener('submit', enviarReportePorCorreo);
+
+    const btnGenerar = document.getElementById('btn-boletin-generar');
+    if (btnGenerar) btnGenerar.addEventListener('click', generarBoletinesGrupo);
+    const btnEnviar = document.getElementById('btn-boletin-enviar');
+    if (btnEnviar) btnEnviar.addEventListener('click', enviarBoletinesGrupo);
 }
 
 async function cargarGruposReporte() {
@@ -64,8 +70,30 @@ async function cargarGruposReporte() {
         const select = document.getElementById('reporte-grupo-select');
         select.innerHTML = '<option value="">-- Selecciona un grupo --</option>' +
             grupos.map(grp => `<option value="${grp.id_grupo}">${grp.codigo_grupo} (${grp.nombre_grado})</option>`).join('');
+
+        const selectBoletin = document.getElementById('boletin-grupo-select');
+        if (selectBoletin) {
+            selectBoletin.innerHTML = '<option value="">-- Selecciona un grupo --</option>' +
+                grupos.map(grp => `<option value="${grp.id_grupo}">${grp.codigo_grupo} (${grp.nombre_grado})</option>`).join('');
+        }
     } catch (e) {
         mostrarAlerta('No se pudieron cargar los grupos', 'error');
+    }
+}
+
+async function cargarPeriodosReporte() {
+    try {
+        const res = await API.getPeriodos();
+        const periodos = res.periodos || [];
+        const select = document.getElementById('boletin-periodo-select');
+        if (!select) return;
+        select.innerHTML = '<option value="">-- Selecciona un período --</option>' +
+            periodos.map(p => {
+                const activo = p.estado === 'Abierto' ? ' (Activo)' : '';
+                return `<option value="${p.id_periodo}">${p.nombre_periodo || ('Período ' + p.numero_periodo)}${activo}</option>`;
+            }).join('');
+    } catch (e) {
+        mostrarAlerta('No se pudieron cargar los períodos', 'error');
     }
 }
 
@@ -134,13 +162,79 @@ async function enviarReportePorCorreo(e) {
         }
     }
 
+    const archivo = document.getElementById('reporte-adjunto')?.files?.[0];
+
     try {
-        const dataEnvio = { remitente, tipoReporte, correos, mensaje };
-        await API.enviarReportePorCorreo(dataEnvio);
-        mostrarAlerta(`Reporte enviado a ${correos.length} destinatario(s)`, 'success');
+        if (archivo) {
+            const formData = new FormData();
+            formData.append('remitente', remitente);
+            formData.append('tipoReporte', tipoReporte);
+            formData.append('mensaje', mensaje);
+            formData.append('correos', JSON.stringify(correos));
+            formData.append('archivo_pdf', archivo);
+
+            const res = await fetch('/api/reportes/enviar-correo-adjunto', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al enviar el reporte');
+            mostrarAlerta(`Reporte enviado a ${correos.length} destinatario(s)`, 'success');
+        } else {
+            const dataEnvio = { remitente, tipoReporte, correos, mensaje };
+            await API.enviarReportePorCorreo(dataEnvio);
+            mostrarAlerta(`Reporte enviado a ${correos.length} destinatario(s)`, 'success');
+        }
         document.getElementById('form-enviar-reporte').reset();
     } catch (error) {
         console.error('Error:', error);
         mostrarAlerta(error.message || 'Error al enviar el reporte', 'error');
+    }
+}
+
+async function generarBoletinesGrupo() {
+    const grupoId = document.getElementById('boletin-grupo-select')?.value;
+    const periodoId = document.getElementById('boletin-periodo-select')?.value;
+
+    if (!grupoId || !periodoId) {
+        mostrarAlerta('Selecciona grupo y período para generar boletines', 'error');
+        return;
+    }
+
+    try {
+        const res = await API.sincronizarBoletinesGrupo({ grupo_id: grupoId, periodo_id: periodoId });
+        mostrarAlerta(res.message || 'Boletines generados', 'success');
+        setTimeout(() => renderReportes(), 150);
+    } catch (e) {
+        mostrarAlerta(e.message || 'No se pudieron generar los boletines', 'error');
+    }
+}
+
+async function enviarBoletinesGrupo() {
+    const grupoId = document.getElementById('boletin-grupo-select')?.value;
+    const periodoId = document.getElementById('boletin-periodo-select')?.value;
+    const remitente = document.getElementById('reporte-remitente')?.value;
+    const mensaje = document.getElementById('reporte-mensaje')?.value;
+
+    if (!grupoId || !periodoId) {
+        mostrarAlerta('Selecciona grupo y período para enviar boletines', 'error');
+        return;
+    }
+    if (!remitente || !mensaje.trim()) {
+        mostrarAlerta('Ingresa remitente y mensaje para enviar', 'error');
+        return;
+    }
+
+    try {
+        const res = await API.enviarBoletinesGrupo({
+            grupo_id: grupoId,
+            periodo_id: periodoId,
+            remitente,
+            mensaje
+        });
+        mostrarAlerta(`Boletines enviados: ${res.enviados || 0}`, 'success');
+        setTimeout(() => renderReportes(), 150);
+    } catch (e) {
+        mostrarAlerta(e.message || 'No se pudieron enviar los boletines', 'error');
     }
 }

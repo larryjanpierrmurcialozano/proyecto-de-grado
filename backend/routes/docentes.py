@@ -154,36 +154,7 @@ def api_docente_grados_grupos(id):
         return _error_interno(e)
 
 
-# ── Panel del docente (mis-clases, mis-materias, mi-horario) ─────────────────
-
-@docentes_bp.route('/api/docente/mis-clases', methods=['GET'])
-def api_docente_mis_clases():
-    """Clases del docente actual"""
-    if 'user_id' not in session:
-        return jsonify({'error': 'No autenticado'}), 401
-
-    try:
-        conn = get_db()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("""
-            SELECT DISTINCT g.id_grupo, g.codigo_grupo, gr.nombre_grado, gr.id_grado,
-                   COUNT(DISTINCT e.id_estudiante) as total_estudiantes,
-                   COUNT(DISTINCT a.id_materia) as total_materias
-            FROM asignaciones_docente a
-            JOIN grados gr ON a.id_grado = gr.id_grado
-            JOIN grupos g ON g.id_grado = gr.id_grado
-            LEFT JOIN estudiantes e ON g.id_grupo = e.id_grupo AND e.estado = 'Activo'
-            WHERE a.id_usuario = %s AND a.estado = 'Activa'
-            GROUP BY g.id_grupo
-            ORDER BY gr.numero_grado, g.codigo_grupo
-        """, (session['user_id'],))
-        clases = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return jsonify({'status': 'ok', 'clases': clases}), 200
-    except Exception as e:
-        return _error_interno(e)
-
+# ── Panel del docente (mis-materias, mi-horario) ─────────────────────────────
 
 @docentes_bp.route('/api/docente/mis-materias', methods=['GET'])
 def api_docente_mis_materias():
