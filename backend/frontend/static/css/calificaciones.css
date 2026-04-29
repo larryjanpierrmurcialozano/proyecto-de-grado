@@ -1,0 +1,606 @@
+/* ═══════════════════════════════════════════════════════════════════
+   CALIFICACIONES - Registro de Notas (Estilo refinado)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cal-card {
+    background: linear-gradient(180deg, #f8f8fb 0%, #f7f3f1 100%);
+    border: 1px solid #e5d9d2;
+    border-radius: 16px;
+    box-shadow: 0 10px 24px rgba(86, 63, 48, 0.08);
+}
+
+.cal-header-top {
+    align-items: center;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5d9d2;
+    margin-bottom: 1rem;
+}
+
+.cal-bloque {
+    margin-bottom: 0.95rem;
+}
+
+.calificaciones-footer {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1.1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e8ddd7;
+}
+
+.cal-header-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.cal-header-actions .btn,
+.calificaciones-footer .btn {
+    min-height: 40px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.cal-filtros {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-top: 0.8rem;
+    padding: 0.4rem;
+}
+
+.cal-filtro-item label {
+    display: block;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 0.35rem;
+    color: #4d3428;
+}
+
+.cal-filtro-item select {
+    width: 100%;
+    border: 1px solid #d9c8be;
+    border-radius: 10px;
+    padding: 0.7rem 0.8rem;
+    background: #fff;
+    font-weight: 600;
+}
+
+.cal-filtro-item select:focus {
+    outline: none;
+    border-color: #a17b68;
+    box-shadow: 0 0 0 3px rgba(161, 123, 104, 0.12);
+}
+
+.cal-ponderacion-bar {
+    margin: 1rem 0 0.7rem;
+    padding: 0.9rem;
+    border: 1px solid #e3d6cf;
+    border-radius: 10px;
+    background: #fffcfa;
+}
+
+.cal-ponderacion-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.45rem;
+    color: #4d3428;
+}
+
+.cal-ponderacion-track {
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    background: #efe7e3;
+    overflow: hidden;
+}
+
+.cal-ponderacion-fill {
+    height: 100%;
+    transition: width .25s ease;
+}
+
+.cal-pond-ok { background: #22c55e; }
+.cal-pond-warning { background: #f59e0b; }
+.cal-pond-danger { background: #dc2626; }
+.cal-pond-danger-text { color: #b91c1c; }
+
+.cal-tabla-wrapper {
+    margin-top: 0.8rem;
+}
+
+.cal-tabla-header {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 1rem;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.cal-activity-filter {
+    padding: 0.55rem 1rem;
+    border: 1px solid #d9c8be;
+    border-radius: 8px;
+    background: #fff;
+    color: #4d3428;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.cal-activity-filter:hover {
+    border-color: #a17b68;
+    background: #fff;
+}
+
+.cal-activity-filter:focus {
+    outline: none;
+    border-color: #a17b68;
+    box-shadow: 0 0 0 3px rgba(161, 123, 104, 0.12);
+}
+
+.cal-table-strict {
+    position: relative;
+    overflow-x: auto;
+    overflow-y: hidden;
+    z-index: 1;
+    border: 1px solid #e2d6ce;
+    border-radius: 14px;
+    background: #fff;
+}
+
+.cal-placeholder {
+    padding: 2rem 1rem;
+    border: 1px dashed #d9cbc2;
+    border-radius: 10px;
+    text-align: center;
+    color: #7a655b;
+    background: #fbf8f6;
+}
+
+.cal-excel-container {
+    border: none;
+    background: none;
+    box-shadow: none;
+}
+
+.cal-excel-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.cal-excel-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #ccc3bf;
+    border-bottom: 1px solid #b6a9a3;
+    color: #2f2926;
+    padding: 0.72rem 0.6rem;
+}
+
+.cal-th-num,
+.cal-td-num {
+    width: 42px;
+    text-align: center;
+}
+
+.cal-th-estudiante,
+.cal-td-estudiante {
+    min-width: 280px;
+    text-align: left;
+}
+
+.cal-th-actividad {
+    min-width: 190px;
+    text-align: center;
+}
+
+/* COLUMNAS OCULTAS - Visibilidad selectiva */
+.cal-th-actividad.hidden-column,
+.cal-td-nota.hidden-column {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+.cal-th-final,
+.cal-td-final {
+    min-width: 140px;
+    text-align: center;
+    font-weight: 700;
+}
+
+.cal-excel-table tbody td {
+    border-top: 1px solid #eee4dd;
+    padding: 0.45rem;
+    background: #fff;
+}
+
+.cal-excel-table tbody .cal-td-num,
+.cal-excel-table tbody .cal-td-estudiante {
+    background: #f1f1f1;
+}
+
+.cal-excel-table tbody .cal-td-nota,
+.cal-excel-table tbody .cal-td-final {
+    background: #f3ebeb;
+}
+
+.cal-estudiante-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.cal-actividad-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.cal-actividad-nombre {
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cal-actividad-meta {
+    font-size: 0.78rem;
+    color: #5a4b45;
+}
+
+.cal-actividad-acciones {
+    margin-top: 0.15rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.35rem;
+}
+
+.cal-btn-mini {
+    border: 1px solid #cdbab0;
+    border-radius: 6px;
+    background: #fff;
+    width: 26px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.cal-btn-mini-rojo {
+    border-color: #f1b7b7;
+    color: #b42318;
+}
+
+.cal-td-nota {
+    text-align: center;
+}
+
+.cal-input-nota {
+    width: 86px;
+    text-align: center;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 0.32rem 0.38rem;
+    font-weight: 800;
+    color: #d22d2d;
+    background: transparent;
+    appearance: textfield;
+}
+
+.cal-input-nota::-webkit-outer-spin-button,
+.cal-input-nota::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.cal-input-nota:hover {
+    background: #fffdfd;
+    border-color: #ead6d6;
+}
+
+.cal-input-nota:focus {
+    outline: none;
+    border-color: #d28f8f;
+    background: #fff;
+    box-shadow: 0 0 0 2px rgba(210, 143, 143, 0.22);
+}
+
+.cal-nota-superior { background: #e7f5ea !important; }
+.cal-nota-alto { background: #edf8de !important; }
+.cal-nota-basico { background: #fff8de !important; }
+.cal-nota-bajo { background: #fde7e8 !important; }
+
+.cal-final-cell {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    align-items: center;
+}
+
+.cal-final-pct {
+    font-weight: 800;
+    color: #d22d2d;
+}
+
+.cal-final-nota {
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: #b33f3f;
+}
+
+.cal-final-superior { background: #dff2e2 !important; color: #196b2f; }
+.cal-final-alto { background: #edf8de !important; color: #3f6d21; }
+.cal-final-basico { background: #fff6d5 !important; color: #8a5a09; }
+.cal-final-bajo { background: #fde3e3 !important; color: #a31717; }
+
+.cal-leyenda {
+    margin-top: 0.9rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.92rem;
+    color: #4f3e37;
+}
+
+.cal-leyenda-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.cal-leyenda-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    display: inline-block;
+    border: 1px solid #cdbab0;
+}
+
+.cal-leyenda-superior { background: #e7f5ea; }
+.cal-leyenda-alto { background: #edf8de; }
+.cal-leyenda-basico { background: #fff8de; }
+.cal-leyenda-bajo { background: #fde7e8; }
+
+.cal-upload-wrap {
+    margin-top: 1.25rem;
+    border: 1px solid #dfd2ca;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #f8f4f2 0%, #f4eeea 100%);
+    padding: 1rem;
+}
+
+.cal-upload-grid {
+    margin-top: 1.25rem;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 0.9rem;
+}
+
+.cal-upload-grid .cal-upload-wrap {
+    margin-top: 0;
+}
+
+.cal-acuerdo-wrap {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.cal-upload-header h4 {
+    margin: 0;
+    color: #4b3328;
+    font-size: 1.04rem;
+}
+
+.cal-upload-header p {
+    margin: 0.38rem 0 0;
+    color: #6d5a50;
+    font-size: 0.92rem;
+}
+
+.cal-upload-controls {
+    margin-top: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.cal-file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+.cal-file-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 280px;
+    max-width: 100%;
+    padding: 0.68rem 0.82rem;
+    border: 1px dashed #bca89a;
+    border-radius: 10px;
+    background: #fffdfa;
+    color: #6f4d3f;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.cal-file-label span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cal-file-label:hover {
+    border-color: #946f5d;
+    color: #4d3428;
+}
+
+#modal-cal-actividad {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+#modal-cal-actividad.active {
+    display: flex;
+}
+
+#modal-cal-actividad .modal-content {
+    background: #3e2923;
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 560px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: auto;
+}
+
+#modal-cal-actividad .modal-header {
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1px solid #e5d9d2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#modal-cal-actividad .modal-header h3 {
+    margin: 0;
+    color: #decfc9;
+    font-size: 1.1rem;
+}
+
+#modal-cal-actividad .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    cursor: pointer;
+    color: #bfa9a2;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#modal-cal-actividad .modal-close:hover {
+    color: #333;
+}
+
+#modal-cal-actividad form {
+    padding: 1.5rem;
+}
+
+#modal-cal-actividad .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
+    gap: 0.8rem;
+}
+
+#modal-cal-actividad .form-group {
+    margin-bottom: 0;
+}
+
+#modal-cal-actividad .form-group label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #604b41;
+}
+
+#modal-cal-actividad .form-group input,
+#modal-cal-actividad .form-group select {
+    width: 100%;
+    padding: 0.68rem 0.8rem;
+    border: 1px solid #e0d2ca;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: #977a74;
+}
+
+#modal-cal-actividad .form-group input:focus,
+#modal-cal-actividad .form-group select:focus {
+    outline: none;
+    border-color: #a17b68;
+    box-shadow: 0 0 0 3px rgba(161, 123, 104, 0.12);
+}
+
+#modal-cal-actividad .modal-actions {
+    margin-top: 1.2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5d9d2;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+}
+
+#modal-cal-actividad .modal-actions .btn {
+    min-height: 40px;
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+@media (max-width: 992px) {
+    .cal-filtros {
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+    }
+
+    .cal-header-top {
+        gap: 0.9rem;
+    }
+}
+
+@media (max-width: 680px) {
+    .cal-filtros,
+    #modal-cal-actividad .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .calificaciones-footer,
+    .cal-header-actions {
+        justify-content: stretch;
+    }
+
+    .calificaciones-footer .btn,
+    .cal-header-actions .btn {
+        width: 100%;
+    }
+
+    .cal-upload-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .cal-upload-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cal-file-label,
+    .cal-upload-controls .btn {
+        width: 100%;
+        min-width: 0;
+    }
+}

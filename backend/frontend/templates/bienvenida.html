@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOCSTRY - Gestión Académica Integral</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/docstry-welcome.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/error-handler.css') }}">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- HERO SECTION -->
+    <section class="hero" id="inicio">
+        <div class="hero-visual-left">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Docstry" class="hero-logo-big">
+        </div>
+
+        <div class="hero-content">
+            <h1 class="hero-title">Bienvenido a <span class="brand">DOCSTRY</span></h1>
+            <p class="hero-subtitle">La plataforma integral de gestión académica para tu institución</p>
+            
+            <div class="cta-buttons">
+                <a href="/login" class="btn-primary-large">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </a>
+            </div>
+            
+            <p class="access-note">
+                <i class="fas fa-lock"></i>
+                ¿Necesitas acceso? Contacta al administrador de tu institución
+            </p>
+        </div>
+        
+        <div class="hero-visual">
+            <div class="visual-element">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+        </div>
+    </section>
+
+    <!-- SERVICIOS PRINCIPALES -->
+    <section class="servicios" id="servicios">
+        <div class="container">
+            <h2 class="section-title">Servicios para tu institución</h2>
+            <p class="section-subtitle">Todo lo que necesitas en una sola plataforma</p>
+            
+            <div class="servicios-grid">
+                <!-- Gestión de Estudiantes -->
+                <div class="servicio-card">
+                    <div class="servicio-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 class="servicio-titulo">Gestión de Estudiantes</h3>
+                    <p class="servicio-desc">
+                        Registro completo, perfiles personalizados, historial académico y seguimiento integral de cada estudiante.
+                    </p>
+                    <ul class="servicio-features">
+                        <li><i class="fas fa-check"></i> Registro de datos completos</li>
+                        <li><i class="fas fa-check"></i> Historial académico</li>
+                        <li><i class="fas fa-check"></i> Información del acudiente</li>
+                    </ul>
+                </div>
+
+                <!-- Calificaciones Online -->
+                <div class="servicio-card">
+                    <div class="servicio-icon primary-accent">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3 class="servicio-titulo">Calificaciones Online</h3>
+                    <p class="servicio-desc">
+                        Registro digital de notas, cálculo automático de promedios y boletines actualizados en tiempo real.
+                    </p>
+                    <ul class="servicio-features">
+                        <li><i class="fas fa-check"></i> Registro digital de notas</li>
+                        <li><i class="fas fa-check"></i> Cálculo automático</li>
+                        <li><i class="fas fa-check"></i> Boletines en tiempo real</li>
+                    </ul>
+                </div>
+
+                <!-- Control de Asistencia -->
+                <div class="servicio-card">
+                    <div class="servicio-icon success">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <h3 class="servicio-titulo">Control de Asistencia</h3>
+                    <p class="servicio-desc">
+                        Registro detallado de asistencia, justificantes de ausencia y reportes generados automáticamente.
+                    </p>
+                    <ul class="servicio-features">
+                        <li><i class="fas fa-check"></i> Registro diario</li>
+                        <li><i class="fas fa-check"></i> Justificantes de ausencia</li>
+                        <li><i class="fas fa-check"></i> Reportes automáticos</li>
+                    </ul>
+                </div>
+
+                <!-- Horarios y Materias -->
+                <div class="servicio-card">
+                    <div class="servicio-icon warning">
+                        <i class="fas fa-calendar"></i>
+                    </div>
+                    <h3 class="servicio-titulo">Horarios y Materias</h3>
+                    <p class="servicio-desc">
+                        Gestión de horarios, asignación de materias, distribución de docentes y configuración de grupos.
+                    </p>
+                    <ul class="servicio-features">
+                        <li><i class="fas fa-check"></i> Horarios flexibles</li>
+                        <li><i class="fas fa-check"></i> Asignación de docentes</li>
+                        <li><i class="fas fa-check"></i> Gestión de grupos</li>
+                    </ul>
+                </div>
+
+                <!-- Comunicados y Notificaciones -->
+                <div class="servicio-card">
+                    <div class="servicio-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3 class="servicio-titulo">Comunicados y Notificaciones</h3>
+                    <p class="servicio-desc">
+                        Envía comunicados a padres, estudiantes y docentes de forma rápida y efectiva con confirmación de lectura.
+                    </p>
+                    <ul class="servicio-features">
+                        <li><i class="fas fa-check"></i> Comunicados directos</li>
+                        <li><i class="fas fa-check"></i> Notificaciones automáticas</li>
+                        <li><i class="fas fa-check"></i> Confirmación de lectura</li>
+                    </ul>
+                </div>
+
+                <!-- Reportes y Analítica -->
+                <div class="servicio-card">
+                    <div class="servicio-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="servicio-titulo">Reportes y Analítica</h3>
+                    <p class="servicio-desc">
+                        Reportes detallados, análisis de desempeño, estadísticas de asistencia y datos exportables en múltiples formatos.
+                    </p>
+                    <ul class="servicio-features">
+                        <li><i class="fas fa-check"></i> Reportes personalizados</li>
+                        <li><i class="fas fa-check"></i> Gráficos y análisis</li>
+                        <li><i class="fas fa-check"></i> Exportar en PDF/Excel</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CARACTERÍSTICAS -->
+    <section class="caracteristicas" id="caracteristicas">
+        <div class="container">
+            <h2 class="section-title">Características principales</h2>
+            <p class="section-subtitle">Diseñado para instituciones educativas modernas</p>
+            
+            <div class="caracteristicas-grid">
+                <div class="caracteristica-item">
+                    <div class="caracteristica-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h4>Seguridad</h4>
+                    <p>Datos encriptados y protegidos con los estándares más altos de seguridad</p>
+                </div>
+
+                <div class="caracteristica-item">
+                    <div class="caracteristica-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h4>Acceso Móvil</h4>
+                    <p>Accede desde cualquier dispositivo en cualquier momento</p>
+                </div>
+
+                <div class="caracteristica-item">
+                    <div class="caracteristica-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h4>Rápido y Confiable</h4>
+                    <p>Rendimiento optimizado para un funcionamiento eficiente</p>
+                </div>
+
+                <div class="caracteristica-item">
+                    <div class="caracteristica-icon">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <h4>Soporte Técnico</h4>
+                    <p>Equipo disponible para asistirte</p>
+                </div>
+
+                <div class="caracteristica-item">
+                    <div class="caracteristica-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h4>Análisis Detallado</h4>
+                    <p>Reportes e indicadores para tomar mejores decisiones</p>
+                </div>
+
+                <div class="caracteristica-item">
+                    <div class="caracteristica-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h4>Personalizable</h4>
+                    <p>Adapta la plataforma a las necesidades de tu institución</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTACTO -->
+    <section class="contacto" id="contacto">
+        <div class="container">
+            <h2 class="section-title">¿Preguntas o problemas?</h2>
+            <p class="section-subtitle">Nuestro equipo está listo para ayudarte</p>
+            
+            <div class="contacto-info">
+                <div class="contacto-item">
+                    <i class="fas fa-envelope"></i>
+                    <h4>yimail</h4>
+                    <p>larry_murcialo@fet.edu.co</p>
+                    <style>
+                        .fas.fa-envelope {
+                            color: #571414;
+                        }
+                    </style>
+                </div>
+                <div class="contacto-item">
+                    <i class="fas fa-phone"></i>
+                    <h4>Teléfono</h4>
+                    <p>+57 "telefono del deuño de la pagina (yo no se quien sera xd)"
+                    </p>
+                    <style>
+                        .fas.fa-phone {
+                            color: #470d0d;
+                        }
+                    </style>
+                </div>
+                <div class="contacto-item">
+                    <i class="fas fa-question-circle"></i>
+                    <h4>Solucion mas rapida</h4>
+                    <p>comunicate con tu institucion y pide que corrijan tu contraseña</p>
+
+                     <style>
+                        .fas.fa-question-circle {
+                            color: #4e0b0b;
+                        }
+                     </style>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="docstry-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>DOCSTRY</h4>
+                    <p>Plataforma integral de gestión académica para instituciones educativas</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Enlaces</h4>
+                    <ul>
+                        <li><a href="#inicio">Inicio</a></li>
+                        <!--<li><a href="#servicios">Servicios</a></li>
+                        <li><a href="#caracteristicas">Características</a></li>
+                        <li><a href="#contacto">Contacto</a></li>-->
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="#">Términos de Servicio</a></li>
+                        <li><a href="#">Política de Privacidad</a></li>
+                        <li><a href="#">Cookies</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025-2026 DOCSTRY.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SCRIPTS -->
+    <script src="{{ url_for('static', filename='js/error-handler.js') }}"></script>
+
+</body>
+</html>
