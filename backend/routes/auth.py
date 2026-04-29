@@ -197,6 +197,9 @@ def api_profile():
 
     except Exception as e:
         return _error_interno(e)
+    
+"""locooooooooooooooooooooooooooooooooo cambiar contraseñas ta acaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa pelotudoooooooo, 
+corregir error de cambio de contraseña"""
 
 @auth_bp.route('/api/auth/change-password', methods=['POST'])
 def api_change_password():
@@ -221,6 +224,7 @@ def api_change_password():
         # Verificar contraseña actual
         cursor.execute("SELECT contrasena_hash FROM usuarios WHERE id_usuario = %s", (session['user_id'],))
         usuario = cursor.fetchone()
+        print(usuario)
 
         if not usuario or not verify_password(data['current_password'], usuario['contrasena_hash']):
             cursor.close()

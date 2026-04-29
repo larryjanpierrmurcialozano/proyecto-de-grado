@@ -25,7 +25,7 @@ proyecto de grado/
 │   │   ├── database.py          Pool de conexiones
 │   │   ├── constants.py         Constantes globales
 │   │   └── helpers.py           hash, log, decoradores
-│   ├── backend/                 Templates, static, uploads
+│   ├── frontend/                Templates, static, uploads
 │   ├── scripts/                 Scripts de migracion de base de datos
 │   ├── planillas_locales/       Almacenamiento de archivos Excel fisicos (periodos)
 │   └── historial_respaldos/     Copias de seguridad

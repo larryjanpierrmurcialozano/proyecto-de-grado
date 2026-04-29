@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════════════════════════
-# DOCSTRY - BACKEND FLASK
+# DOCSTRY -  FLASK
 # ══════════════════════════════════════════════════════════════════════════════
 # Sistema de Gestión Académica
 # Versión: 4.0 BETA (Blueprints)
@@ -37,12 +37,15 @@ from routes.observador import observador_bp
 # CONFIGURACIÓN
 # ══════════════════════════════════════════════════════════════════════════════
 
+# controlar la ubicacion cambiar el nombre del frontend a frontend y eliminar 
+# el backend y reemplazarlo por frontend en la linea 44 46 46 y 113 en el path
+
 load_dotenv()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-TEMPLATE_DIR = os.path.join(BASE_DIR, 'backend', 'templates')
-STATIC_DIR = os.path.join(BASE_DIR, 'backend', 'static')
-UPLOAD_DIR = os.path.join(BASE_DIR, 'backend', 'uploads')
+TEMPLATE_DIR = os.path.join(BASE_DIR, 'frontend', 'templates')
+STATIC_DIR = os.path.join(BASE_DIR, 'frontend', 'static')
+UPLOAD_DIR = os.path.join(BASE_DIR, 'frontend', 'uploads')
 
 app = Flask(
     __name__,
@@ -109,7 +112,7 @@ def handle_exception(e):
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(
-        os.path.join(app.root_path, 'backend', 'static', 'img'),
+        os.path.join(app.root_path, 'frontend', 'static', 'img'),
         'logo.png', mimetype='image/png'
     )
 
