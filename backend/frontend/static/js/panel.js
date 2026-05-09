@@ -125,7 +125,7 @@ function getMenuItems() {
                 { id: 'reportes', icono: 'fa-file-pdf', texto: 'Reportes' }
             ]},
             { seccion: 'SISTEMA', items: [
-                { id: 'logs', icono: 'fa-history', texto: 'Logs del Sistema' }
+                { id: 'logs', icono: 'fa-history', texto: 'Auditoria' }
             ]}
         ];
     }
@@ -181,7 +181,7 @@ function getMenuItems() {
             { id: 'reportes', icono: 'fa-file-pdf', texto: 'Reportes' }
         ]},
         { seccion: 'SISTEMA', items: [
-            { id: 'logs', icono: 'fa-history', texto: 'Logs del Sistema' }
+            { id: 'logs', icono: 'fa-history', texto: 'Auditoria' }
         ]}
     ];
 }
@@ -230,9 +230,9 @@ function generarSidebar() {
             html += `<li class="sidebar-label">${seccion.seccion}</li>`;
             itemsVisibles.forEach(item => {
                 html += `
-                    <li class="sidebar-item" data-page="${item.id}">
+                        <li class="sidebar-item" data-page="${item.id}" title="${item.texto}" aria-label="${item.texto}">
                         <i class="fas ${item.icono}"></i>
-                        ${item.texto}
+                            <span>${item.texto}</span>
                     </li>
                 `;
             });
@@ -466,22 +466,33 @@ async function mostrarPerfil() {
             throw new Error('Perfil no disponible');
         }
 
+        const iniciales = Helpers.getIniciales(u.nombre, u.apellido);
+
         document.getElementById('perfil-content').innerHTML = `
-            <div class="form-group">
-                <label>Nombre Completo</label>
-                <input type="text" value="${u.nombre} ${u.apellido}" disabled>
+            <div class="perfil-resumen">
+                <div class="perfil-avatar">${iniciales}</div>
+                <div class="perfil-identidad">
+                    <h3>${u.nombre} ${u.apellido}</h3>
+                    <span class="badge badge-cafe">${u.nombre_rol}</span>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="text" value="${u.correo}" disabled>
-            </div>
-            <div class="form-group">
-                <label>Documento</label>
-                <input type="text" value="${u.documento}" disabled>
-            </div>
-            <div class="form-group">
-                <label>Rol</label>
-                <input type="text" value="${u.nombre_rol}" disabled>
+            <div class="perfil-grid">
+                <div class="perfil-item">
+                    <label>Nombre completo</label>
+                    <div class="perfil-campo">${u.nombre} ${u.apellido}</div>
+                </div>
+                <div class="perfil-item">
+                    <label>Email</label>
+                    <div class="perfil-campo">${u.correo}</div>
+                </div>
+                <div class="perfil-item">
+                    <label>Documento</label>
+                    <div class="perfil-campo">${u.documento}</div>
+                </div>
+                <div class="perfil-item">
+                    <label>Rol</label>
+                    <div class="perfil-campo">${u.nombre_rol}</div>
+                </div>
             </div>
         `;
     } catch (e) {

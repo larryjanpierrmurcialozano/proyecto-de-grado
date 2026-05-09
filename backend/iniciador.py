@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════════════════════════
-# DOCSTRY -  FLASK
+# DOCSTRY - BACKEND FLASK
 # ══════════════════════════════════════════════════════════════════════════════
 # Sistema de Gestión Académica
 # Versión: 4.0 BETA (Blueprints)
@@ -36,9 +36,6 @@ from routes.observador import observador_bp
 # ══════════════════════════════════════════════════════════════════════════════
 # CONFIGURACIÓN
 # ══════════════════════════════════════════════════════════════════════════════
-
-# controlar la ubicacion cambiar el nombre del frontend a frontend y eliminar 
-# el backend y reemplazarlo por frontend en la linea 44 46 46 y 113 en el path
 
 load_dotenv()
 
@@ -79,7 +76,8 @@ app.register_blueprint(reportes_bp)      # Reportes + Logs + Envío de correo
 app.register_blueprint(asistencia_bp)    # Módulo de Asistencia
 app.register_blueprint(periodos_bp)      # Módulo de Períodos
 app.register_blueprint(observador_bp)    # Módulo Observador
-# [DESHABILITADO PARA TECNÓLOGO] app.register_blueprint(drive_bp)        # Módulo de integración con Google Drive
+# [DESHABILITADO PARA TECNÓLOGO] app.register_blueprint(drive_bp)        # Módulo de integración con Google Drive incompleto y por
+# implementar en futuras versiones
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MIDDLEWARE — AUTENTICACIÓN GLOBAL

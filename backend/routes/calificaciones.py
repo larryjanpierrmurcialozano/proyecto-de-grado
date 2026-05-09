@@ -157,8 +157,8 @@ if _parent not in sys.path:
     sys.path.insert(0, _parent)
 
 # ── CONFIGURACIÓN DE LA PLANTILLA INSTITUCIONAL ────────
-# Intentamos la ruta basada en tu estructura de doble carpeta: backend/backend/templates
-PLANTILLA_PATH = os.path.join(_parent, 'backend', 'templates', 'PlantillaCalificaciones.xlsx')
+# Intentamos la ruta basada en tu estructura de doble carpeta: backend/frontend/templates
+PLANTILLA_PATH = os.path.join(_parent, 'frontend', 'templates', 'PlantillaCalificaciones.xlsx')
 
 # Verificación de seguridad: si no existe en la ruta doble, probamos la ruta simple
 if not os.path.exists(PLANTILLA_PATH):
@@ -168,7 +168,7 @@ if not os.path.exists(PLANTILLA_PATH):
 if not os.path.exists(PLANTILLA_PATH):
     print(f" ERROR CRÍTICO: No se encuentra la plantilla en ninguna de estas rutas:")
     print(f"   Intentado: {PLANTILLA_PATH}")
-    print("   Acción: Verifica que el archivo esté en 'backend/backend/templates/'")
+    print("   Acción: Verifica que el archivo esté en 'backend/frontend/templates/'")
 else:
     print(f" ¡LOGRADO! Plantilla detectada correctamente en: {PLANTILLA_PATH}")
 
@@ -188,7 +188,7 @@ def obtener_ruta_escritorio():
 ESCRITORIO = obtener_ruta_escritorio()
 PLANILLAS_DIR = os.path.join(ESCRITORIO, 'Planillas_DocstrY')
 HISTORIAL_DIR = os.path.join(ESCRITORIO, 'Planillas_DocstrY_Historial')
-ACUERDOS_DIR = os.path.join(_parent, 'backend', 'uploads', 'acuerdos_pedagogicos')
+ACUERDOS_DIR = os.path.join(_parent, 'frontend', 'uploads', 'acuerdos_pedagogicos')
 
 os.makedirs(PLANILLAS_DIR, exist_ok=True)
 os.makedirs(HISTORIAL_DIR, exist_ok=True)
@@ -454,7 +454,7 @@ def _resolver_ruta_plantilla_calificaciones():
     rutas_posibles = [
         PLANTILLA_PATH,
         os.path.join(_parent, 'templates', 'PlantillaCalificaciones.xlsx'),
-        os.path.join(_parent, 'backend', 'templates', 'PlantillaCalificaciones.xlsx')
+        os.path.join(_parent, 'frontend', 'templates', 'PlantillaCalificaciones.xlsx')
     ]
     for ruta in rutas_posibles:
         if os.path.exists(ruta):
@@ -571,7 +571,7 @@ def _generar_planilla_desde_plantilla(grupo_id, materia_id, periodo_id, fecha_ac
     plantilla_path = _resolver_ruta_plantilla_calificaciones()
     if not plantilla_path:
         raise FileNotFoundError(
-            'No se encontró PlantillaCalificaciones.xlsx en backend/templates ni backend/backend/templates'
+            'No se encontró PlantillaCalificaciones.xlsx en frontend/templates ni backend/frontend/templates'
         )
 
     conn = None

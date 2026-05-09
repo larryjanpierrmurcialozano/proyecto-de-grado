@@ -130,21 +130,25 @@ function verComunicado(id) {
 
     const prioridadColor = { 'Urgente': '#e53935', 'Alta': '#ff9800', 'Media': '#fbc02d', 'Baja': '#43a047' }[c.prioridad] || '#888';
     document.getElementById('ver-comunicado-body').innerHTML = `
-        <div style="margin-bottom:1rem;">
-            <h3 style="margin:0 0 0.5rem 0;color:#fff;font-size:1.2rem;">${c.titulo}</h3>
-            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
-                <span class="badge badge-azul">${c.tipo_comunicado}</span>
-                <span class="badge badge-gris">${c.audiencia}</span>
-                <span class="badge" style="background:${prioridadColor};color:#fff;">${c.prioridad}</span>
-                <span class="badge ${c.activo ? 'badge-verde' : 'badge-gris'}">${c.activo ? 'Activo' : 'Inactivo'}</span>
+        <div class="comunicado-resumen">
+            <div class="comunicado-resumen-icono"><i class="fas fa-envelope-open-text"></i></div>
+            <div class="comunicado-resumen-texto">
+                <h3>${c.titulo}</h3>
+                <p>${c.audiencia}</p>
             </div>
         </div>
-        <div style="background:#f9f5f0;padding:1.2rem 1.5rem;border-radius:8px;border:1px solid #e8ddd0;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word;line-height:1.7;color:#3d2a1b;font-size:0.95rem;min-height:120px;max-width:100%;box-sizing:border-box;">
+        <div class="comunicado-chips">
+            <span class="badge badge-azul">${c.tipo_comunicado}</span>
+            <span class="badge badge-gris">${c.audiencia}</span>
+            <span class="badge" style="background:${prioridadColor};color:#fff;">${c.prioridad}</span>
+            <span class="badge ${c.activo ? 'badge-verde' : 'badge-gris'}">${c.activo ? 'Activo' : 'Inactivo'}</span>
+        </div>
+        <div class="comunicado-contenido">
             ${c.contenido}
         </div>
-        <div style="margin-top:1rem;font-size:0.85rem;color:#ccc;">
-            <i class="fas fa-calendar"></i> Publicado: ${new Date(c.fecha_publicacion).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
-            ${c.autor_nombre ? ` · <i class="fas fa-user"></i> ${c.autor_nombre} ${c.autor_apellido || ''}` : ''}
+        <div class="comunicado-meta">
+            <span><i class="fas fa-calendar"></i> Publicado: ${new Date(c.fecha_publicacion).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            ${c.autor_nombre ? `<span><i class="fas fa-user"></i> ${c.autor_nombre} ${c.autor_apellido || ''}</span>` : ''}
         </div>
     `;
     document.getElementById('modal-ver-comunicado').classList.add('active');

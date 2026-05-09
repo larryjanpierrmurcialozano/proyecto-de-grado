@@ -553,7 +553,7 @@ async function asistCargarResumen() {
             <div class="asist-resumen-container">
                 <div class="asist-resumen-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
                     <h3 style="margin: 0; color: #333; font-size: 14px; font-weight: 600;">Resumen de Asistencia por Estudiante</h3>
-                    <button onclick="asistDescargarReporteGeneral()" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px; padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                    <button onclick="asistDescargarReporteGeneral()" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px; padding: 8px 15px; background: #674a42; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                         <i class="fas fa-download"></i> Descargar Reporte General
                     </button>
                 </div>
@@ -697,12 +697,12 @@ async function asistCargarJustificaciones() {
             <div class="asist-just-container" style="width: 100%; overflow-x: auto;">
                 <table class="asist-tabla asist-tabla-justificaciones" style="width: 100%; border-collapse: collapse;">
                     <thead>
-                        <tr style="background: var(--bg-subtle, #f8fafc);">
-                            <th class="asist-th-estudiante" style="text-align: left; padding: 0.65rem 0.75rem; border-bottom: 2px solid var(--border, #e2e8f0);">Estudiante</th>
-                            <th style="text-align: center; padding: 0.65rem 0.75rem; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted, #64748b); letter-spacing: 0.3px; border-bottom: 2px solid var(--border, #e2e8f0);">Fecha del Documento</th>
-                            <th style="text-align: center; padding: 0.65rem 0.75rem; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted, #64748b); letter-spacing: 0.3px; border-bottom: 2px solid var(--border, #e2e8f0);">Tipo</th>
-                            <th style="text-align: center; padding: 0.65rem 0.75rem; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted, #64748b); letter-spacing: 0.3px; border-bottom: 2px solid var(--border, #e2e8f0);">Soporte</th>
-                            <th style="text-align: center; padding: 0.65rem 0.75rem; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted, #64748b); letter-spacing: 0.3px; border-bottom: 2px solid var(--border, #e2e8f0);">Aprobado</th>
+                        <tr style="background: var(--crema-fondo);">
+                            <th class="asist-th-estudiante" style="text-align: left; padding: 0.4rem 0.5rem; font-size: 0.65rem; font-weight: 700; color: var(--cafe-oscuro); text-transform: uppercase; letter-spacing: 0.2px; border-bottom: 1px solid rgba(75, 57, 53, 0.1);">Estudiante</th>
+                            <th style="text-align: center; padding: 0.4rem 0.5rem; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--cafe-oscuro); letter-spacing: 0.2px; border-bottom: 1px solid rgba(75, 57, 53, 0.1);">Fecha del Documento</th>
+                            <th style="text-align: center; padding: 0.4rem 0.5rem; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--cafe-oscuro); letter-spacing: 0.2px; border-bottom: 1px solid rgba(75, 57, 53, 0.1);">Tipo</th>
+                            <th style="text-align: center; padding: 0.4rem 0.5rem; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--cafe-oscuro); letter-spacing: 0.2px; border-bottom: 1px solid rgba(75, 57, 53, 0.1);">Soporte</th>
+                            <th style="text-align: center; padding: 0.4rem 0.5rem; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--cafe-oscuro); letter-spacing: 0.2px; border-bottom: 1px solid rgba(75, 57, 53, 0.1);">Aprobado</th>
                         </tr>
                     </thead>
                     <tbody>`;

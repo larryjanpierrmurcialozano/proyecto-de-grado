@@ -115,7 +115,26 @@ function verGrupo(id) {
                 if (!estudiantes.length) {
                     list.innerHTML = '<p>No hay estudiantes en este grupo.</p>';
                 } else {
-                    list.innerHTML = `<ul>${estudiantes.map(e => `<li>${e.apellido || ''} ${e.nombre || ''} (${e.documento || ''})</li>`).join('')}</ul>`;
+                    list.innerHTML = `
+                        <div class="grupo-estudiantes-resumen">
+                            <div class="grupo-estudiantes-icono"><i class="fas fa-users"></i></div>
+                            <div>
+                                <h3>${estudiantes.length} estudiante(s) registrados</h3>
+                                <p>Listado organizado por nombre completo y documento.</p>
+                            </div>
+                        </div>
+                        <div class="grupo-estudiantes-lista">
+                            ${estudiantes.map((e, idx) => `
+                                <div class="grupo-estudiante-card">
+                                    <div class="grupo-estudiante-numero">${String(idx + 1).padStart(2, '0')}</div>
+                                    <div class="grupo-estudiante-info">
+                                        <strong>${e.apellido || ''} ${e.nombre || ''}</strong>
+                                        <span>${e.documento || 'Sin documento'}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
                 }
                 document.getElementById('modal-grupo-estudiantes-titulo').textContent = `Estudiantes del grupo ${id}`;
                 document.getElementById('modal-grupo-estudiantes').classList.add('active');

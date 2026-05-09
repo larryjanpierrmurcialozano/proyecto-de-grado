@@ -313,18 +313,25 @@ async function verEstudiante(id) {
         const grupoData = GRUPOS_CACHE_EST.find(g => String(g.id_grupo) === String(e.id_grupo));
         const gradoGrupo = grupoData ? `${grupoData.nombre_grado} / ${grupoData.codigo_grupo}` : `${e.nombre_grado || ''} / ${e.codigo_grupo || ''}`;
         const fechaNac = e.fecha_nacimiento ? e.fecha_nacimiento.split('T')[0] : '-';
+        const iniciales = Helpers.getIniciales(e.nombre, e.apellido);
 
         body.innerHTML = `
-            <div class="detalle-info">
-                <div class="detalle-item"><i class="fas fa-id-card"></i><div><label>Documento</label><span>${e.documento || '-'}</span></div></div>
-                <div class="detalle-item"><i class="fas fa-envelope"></i><div><label>Correo</label><span>${e.correo || '-'}</span></div></div>
-                <div class="detalle-item"><i class="fas fa-user"></i><div><label>Nombre</label><span>${e.nombre} ${e.apellido}</span></div></div>
-                <div class="detalle-item"><i class="fas fa-calendar"></i><div><label>Fecha de nacimiento</label><span>${fechaNac}</span></div></div>
-                <div class="detalle-item"><i class="fas fa-venus-mars"></i><div><label>Género</label><span>${e.genero || '-'}</span></div></div>
-                <div class="detalle-item"><i class="fas fa-users"></i><div><label>Grupo</label><span>${gradoGrupo}</span></div></div>
-                <div class="detalle-item"><i class="fas fa-toggle-on"></i><div><label>Estado</label><span>${e.estado}</span></div></div>
-                <div class="detalle-item"><i class="fas fa-user-friends"></i><div><label>Acudiente</label><span>${e.acudiente_nombre || '-'}${e.acudiente_telefono ? ' - ' + e.acudiente_telefono : ''}</span></div></div>
-                <div class="detalle-item"><i class="fas fa-home"></i><div><label>Dirección</label><span>${e.direccion || '-'}</span></div></div>
+            <div class="detalle-estudiante">
+                <div class="detalle-avatar">
+                    <div class="avatar-grande">${iniciales}</div>
+                    <h3>${e.nombre} ${e.apellido}</h3>
+                    <span class="badge badge-cafe">${gradoGrupo}</span>
+                </div>
+                <div class="detalle-info">
+                    <div class="detalle-item"><i class="fas fa-id-card"></i><div><label>Documento</label><span>${e.documento || '-'}</span></div></div>
+                    <div class="detalle-item"><i class="fas fa-envelope"></i><div><label>Correo</label><span>${e.correo || '-'}</span></div></div>
+                    <div class="detalle-item"><i class="fas fa-calendar"></i><div><label>Fecha de nacimiento</label><span>${fechaNac}</span></div></div>
+                    <div class="detalle-item"><i class="fas fa-venus-mars"></i><div><label>Género</label><span>${e.genero || '-'}</span></div></div>
+                    <div class="detalle-item"><i class="fas fa-users"></i><div><label>Grupo</label><span>${gradoGrupo}</span></div></div>
+                    <div class="detalle-item"><i class="fas fa-toggle-on"></i><div><label>Estado</label><span>${e.estado}</span></div></div>
+                    <div class="detalle-item"><i class="fas fa-user-friends"></i><div><label>Acudiente</label><span>${e.acudiente_nombre || '-'}${e.acudiente_telefono ? ' - ' + e.acudiente_telefono : ''}</span></div></div>
+                    <div class="detalle-item"><i class="fas fa-home"></i><div><label>Dirección</label><span>${e.direccion || '-'}</span></div></div>
+                </div>
             </div>
         `;
     } catch (error) {

@@ -196,7 +196,7 @@ def _obs_draw_single_copy(pdf, x, y_top, w, h, data):
 	current_y = y_top - 2
 
 	logo_path = os.path.abspath(
-		os.path.join(os.path.dirname(__file__), '..', 'backend', 'static', 'img', 'logo.png')
+		os.path.join(os.path.dirname(__file__), '..', 'backend', 'static', 'img', 'escudo.png')
 	)
 	if ImageReader and os.path.exists(logo_path):
 		try:

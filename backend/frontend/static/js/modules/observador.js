@@ -133,7 +133,7 @@ function _obsFormatoCopiaHtml(data) {
         <section class="obs-print-copy">
             <header class="obs-print-head">
                 <div class="obs-print-head-left">
-                    <img src="/static/img/logo.png" alt="Logo" onerror="this.style.display='none'">
+                    <img src="/static/img/escudo.png" alt="Logo" onerror="this.style.display='none'">
                 </div>
                 <div class="obs-print-head-center">
                     <h1>${escapeHtml(data.institucion)}</h1>

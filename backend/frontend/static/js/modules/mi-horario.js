@@ -4,8 +4,16 @@
 // ════════════════════════════════════════════════════════════════════════════════
 
 const MI_HORARIO_COLORES = [
-    '#e8d5b7', '#d4c4a8', '#c9b99a', '#bfae8e', '#f0e2c8',
-    '#e0c8a0', '#d5bc94', '#cbb088', '#c1a57c', '#f5edd8'
+    'rgba(255, 205, 205, 0.42)',  // Rojo pastel
+    'rgba(255, 226, 190, 0.42)',  // Naranja pastel
+    'rgba(255, 246, 193, 0.42)',  // Amarillo pastel
+    'rgba(209, 236, 209, 0.42)',  // Verde pastel
+    'rgba(208, 228, 255, 0.42)',  // Azul pastel
+    'rgba(231, 214, 244, 0.42)',  // Lila pastel
+    'rgba(255, 214, 232, 0.42)',  // Rosa pastel
+    'rgba(214, 240, 240, 0.42)',  // Turquesa pastel
+    'rgba(233, 233, 205, 0.42)',  // Oliva claro
+    'rgba(199, 226, 255, 0.42)'   // Azul cielo pastel
 ];
 let _miColorIdx = 0;
 const _miColorMap = {};

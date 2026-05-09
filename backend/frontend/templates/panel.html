@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DOCSTRY - Panel</title>
+    <title>NEXO DE DATOS - Panel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/panel.css">
     <link rel="stylesheet" href="/static/css/horarios.css">
@@ -72,21 +72,7 @@
         </div>
     </div>
 
-    <!-- MODAL ESTUDIANTES DE GRUPO -->
-    <div class="modal-overlay" id="modal-grupo-estudiantes">
-        <div class="modal" style="max-width: 600px;">
-            <div class="modal-header">
-                <h2><i class="fas fa-users"></i> <span id="modal-grupo-estudiantes-titulo">Estudiantes del grupo</span></h2>
-                <button class="modal-close" onclick="cerrarModal('modal-grupo-estudiantes')">&times;</button>
-            </div>
-            <div class="modal-body" id="modal-grupo-estudiantes-list" style="max-height: 60vh; overflow:auto; padding: 1rem;">
-                <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-cafe" onclick="cerrarModal('modal-grupo-estudiantes')"><i class="fas fa-times"></i> Cerrar</button>
-            </div>
-        </div>
-    </div>
+
 
     <!-- MODAL ELIMINAR GRADO/GRUPO -->
     <div class="modal-overlay" id="modal-eliminar-grado-grupo">
@@ -105,7 +91,7 @@
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <img src="/static/img/logo.png" alt="Docstry" class="sidebar-logo">
+            <img src="/static/img/escudo.png" alt="NEXO DE DATOS" class="sidebar-logo">
         </div>
         <ul class="sidebar-menu" id="sidebar-menu">
             <!-- Se genera dinámicamente -->
@@ -155,12 +141,12 @@
 
     <!-- MODAL PERFIL -->
     <div class="modal-overlay" id="modal-perfil">
-        <div class="modal">
+        <div class="modal modal-perfil-detalle">
             <div class="modal-header">
                 <h2><i class="fas fa-user-circle"></i> Mi Perfil</h2>
                 <button class="modal-close" onclick="cerrarModal('modal-perfil')">&times;</button>
             </div>
-            <div id="perfil-content">
+            <div id="perfil-content" class="perfil-content">
                 <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
             </div>
         </div>
@@ -308,57 +294,7 @@
         </div>
     </div>
 
-    <!-- MODAL VER DETALLES USUARIO -->
-    <div class="modal-overlay" id="modal-ver-usuario">
-        <div class="modal" style="max-width: 500px;">
-            <div class="modal-header">
-                <h2><i class="fas fa-user-circle"></i> Detalles del Usuario</h2>
-                <button class="modal-close" onclick="cerrarModal('modal-ver-usuario')">&times;</button>
-            </div>
-            <div class="detalle-usuario">
-                <div class="detalle-avatar">
-                    <div class="avatar-grande">LJ</div>
-                    <h3>Larry Janpier</h3>
-                    <span class="badge badge-cafe">server_admin</span>
-                </div>
-                <div class="detalle-info">
-                    <div class="detalle-item">
-                        <i class="fas fa-envelope"></i>
-                        <div>
-                            <label>Correo</label>
-                            <span>larry@docstry.com</span>
-                        </div>
-                    </div>
-                    <div class="detalle-item">
-                        <i class="fas fa-id-card"></i>
-                        <div>
-                            <label>Documento</label>
-                            <span>1234567890</span>
-                        </div>
-                    </div>
-                    <div class="detalle-item">
-                        <i class="fas fa-calendar"></i>
-                        <div>
-                            <label>Fecha de Registro</label>
-                            <span>01/01/2026</span>
-                        </div>
-                    </div>
-                    <div class="detalle-item">
-                        <i class="fas fa-circle" style="color: #4caf50;"></i>
-                        <div>
-                            <label>Estado</label>
-                            <span>Activo</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-cafe" onclick="cerrarModal('modal-ver-usuario')">
-                    <i class="fas fa-times"></i> Cerrar
-                </button>
-            </div>
-        </div>
-    </div>
+
 
     <!-- MODAL CREAR/EDITAR ESTUDIANTE -->
     <div class="modal-overlay" id="modal-estudiante">
@@ -447,87 +383,7 @@
         </div>
     </div>
 
-    <!-- MODAL VER ESTUDIANTE -->
-    <div class="modal-overlay" id="modal-ver-estudiante">
-        <div class="modal" style="max-width: 520px;">
-            <div class="modal-header">
-                <h2><i class="fas fa-id-card-alt"></i> Detalle del Estudiante</h2>
-                <button class="modal-close" onclick="cerrarModal('modal-ver-estudiante')">&times;</button>
-            </div>
-            <div id="ver-estudiante-body" style="padding: 0.5rem 0 1rem 0;">
-                <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-cafe" onclick="cerrarModal('modal-ver-estudiante')">
-                    <i class="fas fa-times"></i> Cerrar
-                </button>
-            </div>
-        </div>
-    </div>
 
-    <!-- MODAL BOLETIN ESTUDIANTE -->
-    <div class="modal-overlay" id="modal-boletin-estudiante">
-        <div class="modal" style="max-width: 520px;">
-            <div class="modal-header">
-                <h2><i class="fas fa-file-pdf"></i> Generar Boletín</h2>
-                <button class="modal-close" onclick="cerrarModal('modal-boletin-estudiante')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="boletin-estudiante-id">
-                <div class="form-group">
-                    <label><i class="fas fa-calendar"></i> Período</label>
-                    <select id="boletin-estudiante-periodo" style="width: 100%;"></select>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-cafe" onclick="cerrarModal('modal-boletin-estudiante')">
-                    <i class="fas fa-times"></i> Cerrar
-                </button>
-                <button class="btn btn-verde" onclick="descargarBoletinEstudiante()">
-                    <i class="fas fa-download"></i> Generar PDF
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL ELIMINAR ESTUDIANTE -->
-    <div class="modal-overlay" id="modal-eliminar-estudiante">
-        <div class="modal" style="max-width: 680px;">
-            <div class="modal-header">
-                <h2><i class="fas fa-exclamation-triangle" style="color:#e53935;"></i> Confirmar acción</h2>
-                <button class="modal-close" onclick="cerrarModal('modal-eliminar-estudiante')">&times;</button>
-            </div>
-            <div class="modal-grid-2" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
-                <div class="card" style="background: #feeceb; border: 1px solid #ef9a9a;">
-                    <h3 style="margin-top:0;color:#c62828;">Eliminar definitivamente</h3>
-                    <p style="color:#c62828;">¿Estás seguro de querer eliminar este estudiante de la base de datos? No se podrán recuperar los datos.</p>
-                    <button class="btn btn-rojo" id="btn-confirmar-eliminar-estudiante">
-                        <i class="fas fa-trash"></i> Eliminar
-                    </button>
-                </div>
-                <div class="card" style="background: #f2e5da; border: 1px solid #d7bba2; color: #3d2a1b;">
-                    <h3 style="margin-top:0; color:#3d2a1b;">Marcar como inactivo</h3>
-                    <p style="color:#3d2a1b;">Si no quieres perder el registro, puedes marcarlo como Inactivo y conservar los datos históricos.</p>
-                    <button class="btn btn-cafe" id="btn-inactivar-estudiante">
-                        <i class="fas fa-ban"></i> Marcar Inactivo
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL ASIGNAR DOCENTE -->
-    <div class="modal-overlay" id="modal-asignar-docente">
-        <div class="modal" style="max-width: 650px;">
-            <div class="modal-header">
-                <h2><i class="fas fa-chalkboard-teacher"></i> Asignar Docente</h2>
-                <button class="modal-close" onclick="cerrarModal('modal-asignar-docente')">&times;</button>
-            </div>
-            <div id="asignar-docente-body">
-                <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
-            </div>
-        </div>
-    </div>
 
     <!-- MODAL MATERIA (CREAR/EDITAR) -->
     <div class="modal-overlay" id="modal-materia">
@@ -787,12 +643,12 @@
 
     <!-- MODAL VER COMUNICADO -->
     <div class="modal-overlay" id="modal-ver-comunicado">
-        <div class="modal" style="max-width: 850px;width:90%;">
+        <div class="modal modal-comunicado-detalle" style="max-width: 850px;width:90%;">
             <div class="modal-header">
                 <h2><i class="fas fa-envelope-open-text"></i> Detalle del Comunicado</h2>
                 <button class="modal-close" onclick="cerrarModal('modal-ver-comunicado')">&times;</button>
             </div>
-            <div id="ver-comunicado-body" style="padding: 1rem 0;">
+            <div id="ver-comunicado-body" class="modal-comunicado-body" style="padding: 1rem 0;">
                 <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
             </div>
             <div class="modal-footer">
@@ -824,6 +680,163 @@
             </div>
         </div>
     </div>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+    <!-- SECCIÓN: MODALES DE VISUALIZACIÓN (VER DETALLES)                              -->
+    <!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- MODAL VER DETALLES USUARIO -->
+    <div class="modal-overlay" id="modal-ver-usuario">
+        <div class="modal modal-usuario-detalle" style="max-width: 680px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-circle"></i> Detalles del Usuario</h2>
+                <button class="modal-close" onclick="cerrarModal('modal-ver-usuario')">&times;</button>
+            </div>
+            <div class="detalle-usuario">
+                <div class="detalle-avatar">
+                    <div class="avatar-grande">LJ</div>
+                    <h3>Larry Janpier</h3>
+                    <span class="badge badge-cafe">server_admin</span>
+                </div>
+                <div class="detalle-info">
+                    <div class="detalle-item">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <label>Correo</label>
+                            <span>larry@docstry.com</span>
+                        </div>
+                    </div>
+                    <div class="detalle-item">
+                        <i class="fas fa-id-card"></i>
+                        <div>
+                            <label>Documento</label>
+                            <span>1234567890</span>
+                        </div>
+                    </div>
+                    <div class="detalle-item">
+                        <i class="fas fa-calendar"></i>
+                        <div>
+                            <label>Fecha de Registro</label>
+                            <span>01/01/2026</span>
+                        </div>
+                    </div>
+                    <div class="detalle-item">
+                        <i class="fas fa-circle" style="color: #4caf50;"></i>
+                        <div>
+                            <label>Estado</label>
+                            <span>Activo</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cafe" onclick="cerrarModal('modal-ver-usuario')">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL VER ESTUDIANTE -->
+    <div class="modal-overlay" id="modal-ver-estudiante">
+        <div class="modal modal-estudiante-detalle" style="max-width: 760px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-id-card-alt"></i> Detalle del Estudiante</h2>
+                <button class="modal-close" onclick="cerrarModal('modal-ver-estudiante')">&times;</button>
+            </div>
+            <div id="ver-estudiante-body" style="padding: 0.5rem 0 1rem 0;">
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cafe" onclick="cerrarModal('modal-ver-estudiante')">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL VER ESTUDIANTES DEL GRUPO -->
+    <div class="modal-overlay" id="modal-grupo-estudiantes">
+        <div class="modal modal-grupo-estudiantes-detalle" style="max-width: 760px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-users"></i> <span id="modal-grupo-estudiantes-titulo">Estudiantes del grupo</span></h2>
+                <button class="modal-close" onclick="cerrarModal('modal-grupo-estudiantes')">&times;</button>
+            </div>
+            <div class="modal-body modal-grupo-estudiantes-body" id="modal-grupo-estudiantes-list" style="max-height: 60vh; overflow:auto; padding: 1rem;">
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cafe" onclick="cerrarModal('modal-grupo-estudiantes')"><i class="fas fa-times"></i> Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ASIGNAR DOCENTE -->
+    <div class="modal-overlay" id="modal-asignar-docente">
+        <div class="modal modal-asignar-docente-detalle" style="max-width: 860px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-chalkboard-teacher"></i> Asignar Docente</h2>
+                <button class="modal-close" onclick="cerrarModal('modal-asignar-docente')">&times;</button>
+            </div>
+            <div id="asignar-docente-body">
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL BOLETIN ESTUDIANTE -->
+    <div class="modal-overlay" id="modal-boletin-estudiante">
+        <div class="modal" style="max-width: 520px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-pdf"></i> Generar Boletín</h2>
+                <button class="modal-close" onclick="cerrarModal('modal-boletin-estudiante')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="boletin-estudiante-id">
+                <div class="form-group">
+                    <label><i class="fas fa-calendar"></i> Período</label>
+                    <select id="boletin-estudiante-periodo" style="width: 100%;"></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cafe" onclick="cerrarModal('modal-boletin-estudiante')">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+                <button class="btn btn-verde" onclick="descargarBoletinEstudiante()">
+                    <i class="fas fa-download"></i> Generar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ELIMINAR ESTUDIANTE -->
+    <div class="modal-overlay" id="modal-eliminar-estudiante">
+        <div class="modal" style="max-width: 680px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle" style="color:#e53935;"></i> Confirmar acción</h2>
+                <button class="modal-close" onclick="cerrarModal('modal-eliminar-estudiante')">&times;</button>
+            </div>
+            <div class="modal-grid-2" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
+                <div class="card" style="background: #feeceb; border: 1px solid #ef9a9a;">
+                    <h3 style="margin-top:0;color:#c62828;">Eliminar definitivamente</h3>
+                    <p style="color:#c62828;">¿Estás seguro de querer eliminar este estudiante de la base de datos? No se podrán recuperar los datos.</p>
+                    <button class="btn btn-rojo" id="btn-confirmar-eliminar-estudiante">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </button>
+                </div>
+                <div class="card" style="background: #f2e5da; border: 1px solid #d7bba2; color: #3d2a1b;">
+                    <h3 style="margin-top:0; color:#3d2a1b;">Marcar como inactivo</h3>
+                    <p style="color:#3d2a1b;">Si no quieres perder el registro, puedes marcarlo como Inactivo y conservar los datos históricos.</p>
+                    <button class="btn btn-cafe" id="btn-inactivar-estudiante">
+                        <i class="fas fa-ban"></i> Marcar Inactivo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════════ -->
 
 
     <!-- Librerías para exportar a PDF y Excel -->

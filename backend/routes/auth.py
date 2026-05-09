@@ -23,6 +23,11 @@ def bienvenida():
     """Página de bienvenida"""
     return render_template('bienvenida.html')
 
+@auth_bp.route('/contacto')
+def contacto():
+    """Página de contacto"""
+    return render_template('form-contacto.html')    
+
 @auth_bp.route('/login')
 def login_page():
     """Página de login"""

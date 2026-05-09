@@ -78,13 +78,11 @@ def api_usuario_crear():
         return jsonify({'status': 'ok', 'id': nuevo_id}), 201
     except Exception as e:
         return _error_interno(e)
-    
-"""actualizar contraseñas desde el panel de usuario se ubica aca"""
 
 @usuarios_bp.route('/api/usuarios/<int:id_usuario>', methods=['PUT'])
 def api_usuario_actualizar(id_usuario):
     """Actualizar usuario"""
-    try:
+    try:        
         data = request.get_json()
         conn = get_db()
         cursor = conn.cursor()
@@ -97,6 +95,7 @@ def api_usuario_actualizar(id_usuario):
             "id_rol=%s",
             "is_activo=%s"
         ]
+
         valores = [
             data['nombre'],
             data['apellido'],
@@ -106,10 +105,12 @@ def api_usuario_actualizar(id_usuario):
             data['is_activo']
         ]
 
+
+
         if data.get('password'):
             if len(data['password']) < 6:
-                return jsonify({'error': 'Contraseña mínimo 6 caracteres'}), 400
-            campos.append("contrasena_hash=%s")
+                return jsonify({'error': 'Contraseña minimo 6 caracteres.'}), 400
+            campos.append('contrasena_hash=%s')
             valores.append(hash_password(data['password']))
 
         valores.append(id_usuario)

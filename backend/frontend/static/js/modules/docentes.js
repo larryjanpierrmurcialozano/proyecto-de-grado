@@ -83,11 +83,20 @@ async function abrirModalDocente(docenteId = null) {
 
         body.innerHTML = `
             <form id="form-asignar-docente">
+                <div class="asignar-docente-resumen">
+                    <div class="asignar-docente-icono">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div>
+                        <h3>${docenteEnLista ? `${docenteEnLista.apellido} ${docenteEnLista.nombre}` : 'Selecciona un docente'}</h3>
+                        <p>Organiza grado, materia y estado de la asignación en una sola vista.</p>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label><i class="fas fa-user"></i> Seleccionar Docente</label>
                     <select id="select-docente" required>${opcionesDocentes}</select>
                 </div>
-                <div class="form-row">
+                <div class="asignar-docente-grid">
                     <div class="form-group">
                         <label><i class="fas fa-layer-group"></i> Grado</label>
                         <select id="select-grado">${opcionesGrados}</select>
@@ -96,7 +105,7 @@ async function abrirModalDocente(docenteId = null) {
                         <label><i class="fas fa-book"></i> Materia</label>
                         <select id="select-materia">${opcionesMaterias}</select>
                     </div>
-                    <div class="form-group" style="min-width:140px;">
+                    <div class="form-group">
                         <label><i class="fas fa-toggle-on"></i> Estado</label>
                         <select id="select-estado">
                             <option value="Activa">Activa</option>
@@ -104,12 +113,16 @@ async function abrirModalDocente(docenteId = null) {
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer" style="justify-content:flex-start; gap: 0.75rem;">
+                <div class="modal-footer modal-footer-inline">
                     <button type="button" class="btn btn-cafe" onclick="agregarAsignacionTemp()">
                         <i class="fas fa-plus"></i> Agregar asignación
                     </button>
                 </div>
-                <div id="lista-asignaciones-temp" class="pill-container" style="margin: 0.5rem 0 1rem 0;">
+                <div class="asignaciones-temp-header">
+                    <h4><i class="fas fa-list"></i> Asignaciones actuales</h4>
+                    <span>Revisa o elimina antes de guardar</span>
+                </div>
+                <div id="lista-asignaciones-temp" class="asignaciones-temp-list">
                     ${Helpers.sinDatos('Aún no agregas asignaciones')}
                 </div>
                 <div class="modal-footer">
@@ -194,9 +207,17 @@ function renderAsignacionesTemp() {
         return;
     }
     cont.innerHTML = ASIGNACIONES_DOCENTE_TEMP.map((a, idx) => `
-        <div class="pill">
-            <span>${a.nombre_grado || ('Grado ' + a.id_grado)} · ${a.nombre_materia || ('Materia ' + a.id_materia)} · ${a.estado}</span>
-            <button type="button" onclick="quitarAsignacionTemp(${idx})"><i class="fas fa-times"></i></button>
+        <div class="asignacion-temp-card">
+            <div class="asignacion-temp-texto">
+                <strong>${a.nombre_grado || ('Grado ' + a.id_grado)}</strong>
+                <span>${a.nombre_materia || ('Materia ' + a.id_materia)}</span>
+            </div>
+            <div class="asignacion-temp-meta">
+                <span class="badge badge-cafe">${a.estado}</span>
+                <button type="button" class="btn-quitar-asignacion-temp" onclick="quitarAsignacionTemp(${idx})" aria-label="Quitar asignación">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
         </div>
     `).join('');
 }
