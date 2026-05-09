@@ -271,7 +271,7 @@ def _resolver_ruta_plantilla_boletin():
     here = os.path.dirname(os.path.abspath(__file__))
     parent = os.path.dirname(here)
     rutas = [
-        os.path.join(parent, 'backend', 'templates'),
+        os.path.join(parent, 'frontend', 'templates'),
         os.path.join(parent, 'templates')
     ]
     for base in rutas:

@@ -20,7 +20,7 @@ _ROLES_APROBACION_JUSTIFICANTES = {'server_admin', 'admin_server', 'admin', 'rec
 _TIPOS_JUSTIFICANTE = {'Médico', 'Familiar', 'Administrativo', 'Otro'}
 _EXTENSIONES_PERMITIDAS_JUSTIFICANTE = {'.pdf', '.png', '.jpg', '.jpeg', '.webp', '.doc', '.docx'}
 
-_BASE_BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend'))
+_BASE_BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend'))
 _JUSTIFICANTES_UPLOAD_DIR = os.path.join(_BASE_BACKEND_DIR, 'uploads', 'justificantes')
 _PLANTILLA_ASISTENCIAS_PATH = os.path.join(_BASE_BACKEND_DIR, 'templates', 'PlantillaAsistencias_ReporteGeneral.xlsx')
 
@@ -31,7 +31,7 @@ def _resolver_ruta_plantilla_asistencias():
     rutas_posibles = [
         _PLANTILLA_ASISTENCIAS_PATH,
         os.path.join(parent, 'templates', 'PlantillaAsistencias_ReporteGeneral.xlsx'),
-        os.path.join(parent, 'backend', 'templates', 'PlantillaAsistencias_ReporteGeneral.xlsx'),
+        os.path.join(parent, 'frontend', 'templates', 'PlantillaAsistencias_ReporteGeneral.xlsx'),
     ]
     for ruta in rutas_posibles:
         if os.path.exists(ruta):
@@ -997,7 +997,7 @@ def api_reporte_general_asistencia():
         # Resolver ruta de plantilla
         plantilla_path = _resolver_ruta_plantilla_asistencias()
         if not plantilla_path or not os.path.exists(plantilla_path):
-            return jsonify({'error': 'Plantilla no encontrada en backend/backend/templates'}), 404
+            return jsonify({'error': 'Plantilla no encontrada en backend/frontend/templates'}), 404
 
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
