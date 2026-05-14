@@ -2,7 +2,7 @@
 # BLUEPRINT: ESTUDIANTES — CRUD de estudiantes
 # ════════════════════════════════════════════════════════════════════════════════
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, session
 from utils.database import get_db
 from utils.helpers import _error_interno
 
@@ -118,10 +118,15 @@ def api_estudiante_actualizar(id):
 
 @estudiantes_bp.route('/api/estudiantes/<int:id>', methods=['DELETE'])
 def api_estudiante_eliminar(id):
-    """Eliminar estudiante físicamente y limpiar dependencias relacionadas"""
+    """Eliminar estudiante fisicamente y limpiar dependencias relacionadas"""
     try:
         conn = get_db()
         cursor = conn.cursor()
+
+        # Variables de sesion para el trigger de auditoria
+        cursor.execute("SET @app_user_id = %s", (session.get('user_id'),))
+        cursor.execute("SET @app_ip = %s", (request.remote_addr,))
+        cursor.execute("SET @app_agent = %s", (request.headers.get('User-Agent'),))
 
         dependencias = [
             "DELETE FROM detalle_asistencia WHERE id_estudiante = %s",
@@ -129,7 +134,6 @@ def api_estudiante_eliminar(id):
             "DELETE FROM asistencias_por_periodo WHERE id_estudiante = %s",
             "DELETE FROM justificantes_ausencia WHERE id_estudiante = %s",
             "DELETE FROM reportes_inasistencias WHERE id_estudiante = %s",
-            "DELETE FROM datos_sensibles_estudiante WHERE id_estudiante = %s",
             "DELETE FROM observador WHERE id_estudiante = %s",
             "DELETE FROM notas WHERE id_estudiante = %s"
         ]
