@@ -61,7 +61,8 @@ def api_comunicado_crear():
     """Crear comunicado - solo admins"""
     if 'user_id' not in session:
         return jsonify({'error': 'No autenticado'}), 401
-    if session.get('user_role') not in ROLES_ADMIN_COM:
+    user_role = session.get('user_role', '').lower()
+    if user_role not in [r.lower() for r in ROLES_ADMIN_COM]:
         return jsonify({'error': 'No tienes permisos para crear comunicados'}), 403
     try:
         data = request.get_json()
@@ -95,7 +96,8 @@ def api_comunicado_editar(id):
     """Editar comunicado - solo admins"""
     if 'user_id' not in session:
         return jsonify({'error': 'No autenticado'}), 401
-    if session.get('user_role') not in ROLES_ADMIN_COM:
+    user_role = session.get('user_role', '').lower()
+    if user_role not in [r.lower() for r in ROLES_ADMIN_COM]:
         return jsonify({'error': 'No tienes permisos para editar comunicados'}), 403
     try:
         data = request.get_json()
@@ -133,7 +135,8 @@ def api_comunicado_eliminar(id):
     """Eliminar comunicado - solo admins"""
     if 'user_id' not in session:
         return jsonify({'error': 'No autenticado'}), 401
-    if session.get('user_role') not in ROLES_ADMIN_COM:
+    user_role = session.get('user_role', '').lower()
+    if user_role not in [r.lower() for r in ROLES_ADMIN_COM]:
         return jsonify({'error': 'No tienes permisos para eliminar comunicados'}), 403
     try:
         conn = get_db()

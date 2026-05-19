@@ -54,11 +54,7 @@
 # /calificaciones/grado_#(# = numero de grado sea sexto septimo y asi)/grupo_# (siendo el # el grupo que sea tipo a, b, o c)/materias_#/materia_#_#_calificaciones.xlsx
 # regulacion, lee la base de datos para entender estructura completa, te especifico las tablas que usaras para construir estas indicaciones
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# BLUEPRINT: CALIFICACIONES — Sistema Híbrido (Archivos Locales + Sincronización DB)
-# ═══════════════════════════════════════════════════════════════════════════════
-#
-# CONCEPTO ARQUITECTÓNICO DEL MÓDULO: "Tolerancia a fallos y Trabajo Offline"
+
 # --------------------------------------------------------------------------------
 # Este módulo se basa en un enfoque híbrido, combinando la flexibilidad de uso de 
 # archivos Excel (carpetas locales) con la rapidez y seguridad de una Base de Datos (MySQL).

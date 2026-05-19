@@ -358,7 +358,7 @@ function renderDashboard() {
             { id: 'observador', icono: 'fa-eye', titulo: 'Observador', descripcion: 'Registra observaciones positivas, negativas o neutras de estudiantes.' },
             { id: 'comunicados', icono: 'fa-bullhorn', titulo: 'Comunicados', descripcion: 'Publica circulares, avisos e información para la comunidad.' },
             { id: 'reportes', icono: 'fa-file-pdf', titulo: 'Reportes', descripcion: 'Genera boletines, consolidados y reportes institucionales.' },
-            { id: 'logs', icono: 'fa-history', titulo: 'Logs del Sistema', descripcion: 'Consulta el historial de acciones realizadas en el sistema.' },
+            { id: 'logs', icono: 'fa-history', titulo: 'Auditoría', descripcion: 'Consulta el historial de acciones realizadas en el sistema.' },
             { id: 'mis-materias', icono: 'fa-book-open', titulo: 'Mis Materias (Vista Docente)', descripcion: 'Vista previa de cómo ven los docentes sus materias.' },
             { id: 'mi-horario', icono: 'fa-calendar-week', titulo: 'Mi Horario (Vista Docente)', descripcion: 'Vista previa del horario personal del docente.' }
         ];
@@ -388,7 +388,7 @@ function renderDashboard() {
             { id: 'observador', icono: 'fa-eye', titulo: 'Observador', descripcion: 'Registra observaciones positivas, negativas o neutras de estudiantes.' },
             { id: 'comunicados', icono: 'fa-bullhorn', titulo: 'Comunicados', descripcion: 'Publica circulares, avisos e información para la comunidad.' },
             { id: 'reportes', icono: 'fa-file-pdf', titulo: 'Reportes', descripcion: 'Genera boletines, consolidados y reportes institucionales.' },
-            { id: 'logs', icono: 'fa-history', titulo: 'Logs del Sistema', descripcion: 'Consulta el historial de acciones realizadas en el sistema.' }
+            { id: 'logs', icono: 'fa-history', titulo: 'Auditoría', descripcion: 'Consulta el historial de acciones realizadas en el sistema.' }
         ];
     }
 

@@ -6,8 +6,9 @@
 let comunicadosCargados = [];
 
 async function renderComunicados() {
-    const esAdmin = ['server_admin', 'rector', 'coordinador'].includes(USUARIO.rol);
-    const esProfesor = USUARIO.rol.toLowerCase() === 'profesor' || USUARIO.rol.toLowerCase() === 'docente';
+    const rol = (USUARIO.rol || '').toLowerCase();
+    const esAdmin = ['server_admin', 'rector', 'coordinador'].includes(rol);
+    const esProfesor = rol === 'profesor' || rol === 'docente';
     const totalCols = esAdmin ? 7 : (esProfesor ? 6 : 6);
     const content = document.getElementById('main-content');
     
@@ -50,7 +51,8 @@ async function renderComunicados() {
 }
 
 async function cargarComunicados() {
-    const esAdmin = ['server_admin', 'rector', 'coordinador'].includes(USUARIO.rol);
+    const rol = (USUARIO.rol || '').toLowerCase();
+    const esAdmin = ['server_admin', 'rector', 'coordinador'].includes(rol);
     let comunicados = [];
 
     try {
@@ -65,7 +67,8 @@ async function cargarComunicados() {
 }
 
 function renderTablaComunicados(comunicados, esAdmin) {
-    const esProfesor = USUARIO.rol.toLowerCase() === 'profesor' || USUARIO.rol.toLowerCase() === 'docente';
+    const rol = (USUARIO.rol || '').toLowerCase();
+    const esProfesor = rol === 'profesor' || rol === 'docente';
     const totalCols = esAdmin ? 7 : (esProfesor ? 6 : 6);
     const tbody = document.getElementById('com-tbody');
 
@@ -100,7 +103,8 @@ function renderTablaComunicados(comunicados, esAdmin) {
 }
 
 function filtrarComunicados() {
-    const esAdmin = ['server_admin', 'rector', 'coordinador'].includes(USUARIO.rol);
+    const rol = (USUARIO.rol || '').toLowerCase();
+    const esAdmin = ['server_admin', 'rector', 'coordinador'].includes(rol);
     const tipo = document.getElementById('filtro-com-tipo').value;
     const audienciaEl = document.getElementById('filtro-com-audiencia');
     const audiencia = audienciaEl ? audienciaEl.value : '';
