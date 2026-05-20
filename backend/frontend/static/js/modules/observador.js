@@ -292,7 +292,7 @@ function _buildGuiaProtocolosHtml() {
                          onerror="this.style.display='none'; this.parentElement.querySelector('.obs-guia-imagen-fallback').style.display='flex';">
                     <div class="obs-guia-imagen-fallback" style="display:none;">
                         <i class="fas fa-image"></i>
-                        <p>Agrega la imagen de infografia en <strong>/static/img/protocolo-convivencia.png</strong> para verla aqui.</p>
+                        <p>imagen de protocolo<strong>pal futuro</strong></p>
                     </div>
                 </div>
 
