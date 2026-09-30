@@ -41,7 +41,7 @@ def api_logs():
                 l.descripcion,
                 l.ip_address,
                 l.user_agent,
-                l.exito,
+                NULL AS exito,
                 COALESCE(l.timestamp_accion, l.created_at) AS fecha,
                 u.nombre as usuario_nombre,
                 u.apellido as usuario_apellido

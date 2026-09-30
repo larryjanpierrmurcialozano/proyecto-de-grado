@@ -63,7 +63,7 @@ function _renderLogsTable(logs) {
     if (!tbody) return;
 
     if (!logs.length) {
-        tbody.innerHTML = `<tr><td colspan="10">${Helpers.sinDatos('No hay logs para mostrar')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5">${Helpers.sinDatos('No hay logs para mostrar')}</td></tr>`;
         return;
     }
 
@@ -71,11 +71,6 @@ function _renderLogsTable(logs) {
         const fecha = l.fecha ? Helpers.formatearFechaHora(l.fecha) : '-';
         const usuario = _formatLogUsuario(l);
         const accion = l.tipo_accion || '-';
-        const exito = l.exito === null || l.exito === undefined ? '-' : (Number(l.exito) === 1 ? 'Si' : 'No');
-        const tabla = l.tabla_afectada || l.modulo || l.origen || '-';
-        const registro = l.registro_id ?? '-';
-        const ip = l.ip_address || l.ip || l.ip_origen || '-';
-        const userAgent = l.user_agent || '-';
         const descripcion = l.descripcion || '-';
         const idLog = l.id_log || l.id_log_registro || l.id || l.id_registro || '-';
 
@@ -85,11 +80,6 @@ function _renderLogsTable(logs) {
                 <td>${fecha}</td>
                 <td>${usuario}</td>
                 <td>${accion}</td>
-                <td>${exito}</td>
-                <td>${tabla}</td>
-                <td>${registro}</td>
-                <td>${ip}</td>
-                <td>${userAgent}</td>
                 <td>${descripcion}</td>
             </tr>
         `;

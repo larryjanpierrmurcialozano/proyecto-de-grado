@@ -32,7 +32,7 @@ def api_comunicados():
                 SELECT c.*, u.nombre as autor_nombre, u.apellido as autor_apellido
                 FROM comunicados_rectoria c
                 JOIN usuarios u ON c.id_usuario = u.id_usuario
-                WHERE c.activo = 1 AND c.audiencia IN ('General', 'Docentes')
+                WHERE c.activo = 1 AND c.audiencia IN ('Todos', 'Docentes')
                 ORDER BY c.fecha_publicacion DESC
             """)
         else:
@@ -68,6 +68,9 @@ def api_comunicado_crear():
         data = request.get_json()
         if not data.get('titulo') or not data.get('contenido'):
             return jsonify({'error': 'Título y contenido son obligatorios'}), 400
+        audiencia = data.get('audiencia', 'Todos')
+        if audiencia == 'General':
+            audiencia = 'Todos'
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute("""
@@ -79,7 +82,7 @@ def api_comunicado_crear():
             data['titulo'],
             data['contenido'],
             data.get('tipo_comunicado', 'Información'),
-            data.get('audiencia', 'General'),
+            audiencia,
             data.get('prioridad', 'Media')
         ))
         conn.commit()
@@ -110,6 +113,9 @@ def api_comunicado_editar(id):
             cursor.close()
             conn.close()
             return jsonify({'error': 'Comunicado no encontrado'}), 404
+        audiencia = data.get('audiencia', 'Todos')
+        if audiencia == 'General':
+            audiencia = 'Todos'
         cursor.execute("""
             UPDATE comunicados_rectoria
             SET titulo = %s, contenido = %s, tipo_comunicado = %s, audiencia = %s, prioridad = %s
@@ -118,7 +124,7 @@ def api_comunicado_editar(id):
             data['titulo'],
             data['contenido'],
             data.get('tipo_comunicado', 'Información'),
-            data.get('audiencia', 'General'),
+            audiencia,
             data.get('prioridad', 'Media'),
             id
         ))

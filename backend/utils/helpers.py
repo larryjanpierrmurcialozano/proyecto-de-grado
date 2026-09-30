@@ -46,24 +46,14 @@ def log_action(id_usuario, accion, descripcion, *, tabla_afectada=None, registro
         if not conn:
             return
         cursor = conn.cursor()
-        try:
-            cursor.execute(
-                """
-                INSERT INTO log_registro
-                    (id_usuario, tipo_accion, descripcion, tabla_afectada, registro_id, ip_address, user_agent, exito)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """,
-                (id_usuario, accion, descripcion, tabla_afectada, registro_id, ip_address, user_agent, int(bool(exito)))
-            )
-        except Exception:
-            cursor.execute(
-                """
-                INSERT INTO log_registro
-                    (id_usuario, tipo_accion, descripcion, tabla_afectada, registro_id, ip_address, user_agent)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """,
-                (id_usuario, accion, descripcion, tabla_afectada, registro_id, ip_address, user_agent)
-            )
+        cursor.execute(
+            """
+            INSERT INTO log_registro
+                (id_usuario, tipo_accion, descripcion, tabla_afectada, registro_id, ip_address, user_agent)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (id_usuario, accion, descripcion, tabla_afectada, registro_id, ip_address, user_agent)
+        )
         conn.commit()
     except Exception as e:
         print(f"Log error: {e}")

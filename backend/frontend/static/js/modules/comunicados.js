@@ -162,7 +162,7 @@ function abrirModalComunicado(id = null) {
     document.getElementById('com-id').value = '';
     document.getElementById('com-titulo').value = '';
     document.getElementById('com-tipo').value = 'Información';
-    document.getElementById('com-audiencia').value = 'General';
+    document.getElementById('com-audiencia').value = 'Todos';
     document.getElementById('com-prioridad').value = 'Media';
     document.getElementById('com-contenido').value = '';
 
