@@ -20,18 +20,20 @@ _ROLES_APROBACION_JUSTIFICANTES = {'server_admin', 'admin_server', 'admin', 'rec
 _TIPOS_JUSTIFICANTE = {'Médico', 'Familiar', 'Administrativo', 'Otro'}
 _EXTENSIONES_PERMITIDAS_JUSTIFICANTE = {'.pdf', '.png', '.jpg', '.jpeg', '.webp', '.doc', '.docx'}
 
-_BASE_BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend'))
-_JUSTIFICANTES_UPLOAD_DIR = os.path.join(_BASE_BACKEND_DIR, 'uploads', 'justificantes')
-_PLANTILLA_ASISTENCIAS_PATH = os.path.join(_BASE_BACKEND_DIR, 'templates', 'PlantillaAsistencias_ReporteGeneral.xlsx')
+_BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+_PROJECT_ROOT = os.path.abspath(os.path.join(_BACKEND_DIR, '..'))
+_FRONTEND_DIR = os.path.join(_PROJECT_ROOT, 'frontend')
+_STORAGE_DIR = os.path.join(_PROJECT_ROOT, 'storage')
+_JUSTIFICANTES_UPLOAD_DIR = os.path.join(_STORAGE_DIR, 'uploads', 'justificantes')
+_PLANTILLA_ASISTENCIAS_PATH = os.path.join(_FRONTEND_DIR, 'templates', 'PlantillaAsistencias_ReporteGeneral.xlsx')
 
 
 def _resolver_ruta_plantilla_asistencias():
     """Resuelve la ruta de la plantilla base de asistencias en diferentes layouts del proyecto."""
-    parent = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    parent = _BACKEND_DIR
     rutas_posibles = [
         _PLANTILLA_ASISTENCIAS_PATH,
         os.path.join(parent, 'templates', 'PlantillaAsistencias_ReporteGeneral.xlsx'),
-        os.path.join(parent, 'frontend', 'templates', 'PlantillaAsistencias_ReporteGeneral.xlsx'),
     ]
     for ruta in rutas_posibles:
         if os.path.exists(ruta):
@@ -73,7 +75,7 @@ def _ruta_absoluta_desde_relativa(ruta_relativa):
         return None
 
     ruta_normalizada = str(ruta_relativa).replace('\\', '/').lstrip('/')
-    return os.path.abspath(os.path.join(_BASE_BACKEND_DIR, ruta_normalizada))
+    return os.path.abspath(os.path.join(_STORAGE_DIR, ruta_normalizada))
 
 
 def _reemplazar_etiquetas_hoja(ws, reemplazos):
@@ -997,7 +999,7 @@ def api_reporte_general_asistencia():
         # Resolver ruta de plantilla
         plantilla_path = _resolver_ruta_plantilla_asistencias()
         if not plantilla_path or not os.path.exists(plantilla_path):
-            return jsonify({'error': 'Plantilla no encontrada en backend/frontend/templates'}), 404
+            return jsonify({'error': 'Plantilla no encontrada en frontend/templates'}), 404
 
         conn = get_db()
         cursor = conn.cursor(dictionary=True)

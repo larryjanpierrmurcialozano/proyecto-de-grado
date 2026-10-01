@@ -1,4 +1,4 @@
-"""Compare MySQL database (local) with SQL dump file (db_dump.sql).
+"""Compare MySQL database (local) with SQL dump file.
 Reads DB credentials from backend/.env and compares table presence and row counts.
 Run with the project's venv Python: ./.venv/Scripts/python.exe scripts/compare_db.py
 """
@@ -27,7 +27,7 @@ DB_NAME = env.get('DB_NAME', '')
 print(f"Using DB: {DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
 
 # parse dump
-dump_path = os.path.join(os.path.dirname(__file__), '..', 'db_dump.sql')
+dump_path = os.path.join(os.path.dirname(__file__), '..', '..', 'storage', 'backups', 'db_dump.sql')
 with open(dump_path, 'r', encoding='utf-8', errors='ignore') as f:
     dump = f.read()
 

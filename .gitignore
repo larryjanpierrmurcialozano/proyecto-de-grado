@@ -13,3 +13,8 @@ node_modules/
 credentials.json
 token.json
 backend/tokens/
+backend/.env
+.env
+storage/uploads/
+storage/backups/
+storage/generated/

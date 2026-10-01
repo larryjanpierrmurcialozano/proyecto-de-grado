@@ -269,10 +269,10 @@ BOLETINES_DIR = os.path.join(ESCRITORIO, 'Boletines_DocstrY')
 def _resolver_ruta_plantilla_boletin():
     """Resuelve la ruta de PlantillaBoletin en diferentes layouts."""
     here = os.path.dirname(os.path.abspath(__file__))
-    parent = os.path.dirname(here)
+    project_root = os.path.dirname(os.path.dirname(here))
     rutas = [
-        os.path.join(parent, 'frontend', 'templates'),
-        os.path.join(parent, 'templates')
+        os.path.join(project_root, 'frontend', 'templates'),
+        os.path.join(os.path.dirname(project_root), 'templates')
     ]
     for base in rutas:
         if not os.path.isdir(base):

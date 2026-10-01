@@ -3,9 +3,9 @@
 Respaldo y restauracion de base de datos MySQL/MariaDB.
 
 Ejemplos:
-  python backend/scripts/db_backup.py export --out backend/backup/db_dump.sql
-  python backend/scripts/db_backup.py import --in backend/backup/db_dump.sql
-    python backend/scripts/db_backup.py import-if-missing --in backend/backup/db_dump.sql
+    python scripts/database/db_backup.py export --out storage/backups/db_dump.sql
+    python scripts/database/db_backup.py import --in storage/backups/db_dump.sql
+    python scripts/database/db_backup.py import-if-missing --in storage/backups/db_dump.sql
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND_DIR = ROOT / "backend"
 DEFAULT_ENV = BACKEND_DIR / ".env"
-DEFAULT_DUMP = BACKEND_DIR / "backup" / "db_dump.sql"
+DEFAULT_DUMP = ROOT / "storage" / "backups" / "db_dump.sql"
 
 
 def _load_env(env_path: Path | None) -> None:

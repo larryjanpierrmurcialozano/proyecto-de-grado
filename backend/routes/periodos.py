@@ -93,12 +93,12 @@ def api_periodos_reset_ciclo():
 
 		# Limpieza de archivos trabajados por docentes.
 		_here = os.path.dirname(os.path.abspath(__file__))
-		_parent = os.path.dirname(_here)
+		_parent = os.path.dirname(os.path.dirname(_here))
 		rutas_archivos = [
-			os.path.join(_parent, 'backend', 'uploads', 'acuerdos_pedagogicos'),
-			os.path.join(_parent, 'backend', 'uploads', 'justificantes'),
-			os.path.join(_parent, 'backend', 'uploads', 'planillas'),
-			os.path.join(_parent, 'backend', 'uploads', 'reportes')
+			os.path.join(_parent, 'storage', 'uploads', 'acuerdos_pedagogicos'),
+			os.path.join(_parent, 'storage', 'uploads', 'justificantes'),
+			os.path.join(_parent, 'storage', 'uploads', 'planillas'),
+			os.path.join(_parent, 'storage', 'uploads', 'reportes')
 		]
 
 		archivos_eliminados = 0

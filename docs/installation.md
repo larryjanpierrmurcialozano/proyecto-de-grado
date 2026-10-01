@@ -59,19 +59,19 @@ genera un respaldo .sql en el equipo actual y restauralo en el nuevo equipo.
 ## 1) Exportar la base de datos (equipo actual)
 
 ```powershell
-python backend/scripts/db_backup.py export --out backend/backup/db_dump.sql
+python scripts/database/db_backup.py export --out storage/backups/db_dump.sql
 ```
 
 ## 2) Importar la base de datos (equipo nuevo)
 
 ```powershell
-python backend/scripts/db_backup.py import --in backend/backup/db_dump.sql
+python scripts/database/db_backup.py import --in storage/backups/db_dump.sql
 ```
 
 ## 3) Importar solo si la base NO existe
 
 ```powershell
-python backend/scripts/db_backup.py import-if-missing --in backend/backup/db_dump.sql
+python scripts/database/db_backup.py import-if-missing --in storage/backups/db_dump.sql
 ```
 
 ## Notas

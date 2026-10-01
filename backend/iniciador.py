@@ -40,9 +40,10 @@ from routes.observador import observador_bp
 load_dotenv()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-TEMPLATE_DIR = os.path.join(BASE_DIR, 'frontend', 'templates')
-STATIC_DIR = os.path.join(BASE_DIR, 'frontend', 'static')
-UPLOAD_DIR = os.path.join(BASE_DIR, 'frontend', 'uploads')
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, '..'))
+TEMPLATE_DIR = os.path.join(PROJECT_ROOT, 'frontend', 'templates')
+STATIC_DIR = os.path.join(PROJECT_ROOT, 'frontend', 'static')
+UPLOAD_DIR = os.path.join(PROJECT_ROOT, 'storage', 'uploads')
 
 app = Flask(
     __name__,
@@ -110,7 +111,7 @@ def handle_exception(e):
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(
-        os.path.join(app.root_path, 'frontend', 'static', 'img'),
+        os.path.join(STATIC_DIR, 'img'),
         'logo.png', mimetype='image/png'
     )
 

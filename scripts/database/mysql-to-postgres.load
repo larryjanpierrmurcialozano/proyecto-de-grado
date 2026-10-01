@@ -1,0 +1,16 @@
+LOAD DATABASE
+    FROM mysql://MYSQL_USER:MYSQL_PASSWORD@MYSQL_HOST:3306/anexo_de_datos
+    INTO postgresql://POSTGRES_USER:POSTGRES_PASSWORD@POSTGRES_HOST:5432/anexo_de_datos
+
+WITH include drop,
+     create tables,
+     create indexes,
+     reset sequences,
+     foreign keys,
+     workers = 4,
+     concurrency = 1
+
+CAST type datetime to timestamp using zero-dates-to-null,
+     type timestamp to timestamptz,
+     type json to jsonb,
+     type tinyint when (= precision 1) to boolean using tinyint-to-boolean;
