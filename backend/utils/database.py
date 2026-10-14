@@ -2,35 +2,36 @@
 # CONEXION A BASE DE DATOS — SINGLETON POOL + AUTO-CLEANUP
 # ════════════════════════════════════════════════════════════════════════════════
 
-from mysql.connector import Error
-from mysql.connector.pooling import MySQLConnectionPool
 from contextlib import contextmanager
 import os
 from dotenv import load_dotenv
+import psycopg
+from psycopg.rows import dict_row
 
 load_dotenv()
 
 db_config = {
     'host': os.getenv('DB_HOST', 'localhost'),
-    'port': int(os.getenv('DB_PORT', 3306)),
-    'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', '3202964025larry.'),
+    'port': int(os.getenv('DB_PORT', 5432)),
+    'user': os.getenv('DB_USER', 'docstry_app'),
+    'password': os.getenv('DB_PASSWORD', 'change_me_locally'),
     'database': os.getenv('DB_NAME', 'anexo_de_datos')
 }
 
-# Pool unico (singleton) que se crea UNA sola vez al arrancar el servidor.
-# Todas las llamadas a get_db() obtienen una conexion reutilizable del pool.
 try:
-    db_pool = MySQLConnectionPool(
-        pool_name="docstry_pool",
-        pool_size=20,
-        pool_reset_session=True,
-        **db_config
+    db_pool = psycopg.Connection.connect(
+        host=db_config['host'],
+        port=db_config['port'],
+        user=db_config['user'],
+        password=db_config['password'],
+        dbname=db_config['database']
     )
-    print("[OK] Pool Singleton inicializado (20 conexiones reutilizables)")
-except Error as e:
+    db_pool.close()
+    db_pool = True
+    print("[OK] Conexion PostgreSQL validada")
+except psycopg.Error as e:
     db_pool = None
-    print(f"[ERROR] Error creando pool de BD: {e}")
+    print(f"[ERROR] Error conectando a PostgreSQL: {e}")
 
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -39,7 +40,7 @@ except Error as e:
 # ════════════════════════════════════════════════════════════════════════════════
 
 class SafeConnection:
-    """Envuelve una PooledMySQLConnection para evitar fugas de conexiones.
+    """Envuelve una conexion PostgreSQL para centralizar su cierre.
 
     - Si la ruta llama conn.close(), la conexion se devuelve al pool
       y el flag _closed impide que el teardown la cierre de nuevo.
@@ -55,6 +56,11 @@ class SafeConnection:
         if not self._closed:
             self._closed = True
             self._conn.close()
+
+    def cursor(self, *args, dictionary=False, **kwargs):
+        if dictionary:
+            kwargs['row_factory'] = dict_row
+        return self._conn.cursor(*args, **kwargs)
 
     def __getattr__(self, name):
         return getattr(self._conn, name)
@@ -73,7 +79,16 @@ def get_db():
         if not db_pool:
             print("[ERROR] Pool no disponible")
             return None
-        raw = db_pool.get_connection()
+        if not db_pool:
+            print("[ERROR] Conexion PostgreSQL no disponible")
+            return None
+        raw = psycopg.Connection.connect(
+            host=db_config['host'],
+            port=db_config['port'],
+            user=db_config['user'],
+            password=db_config['password'],
+            dbname=db_config['database']
+        )
         conn = SafeConnection(raw)
         # Registrar para cierre automatico al final del request
         try:
@@ -85,7 +100,7 @@ def get_db():
         except Exception:
             pass
         return conn
-    except Error as e:
+    except psycopg.Error as e:
         print(f"[ERROR] Error obteniendo conexion del pool: {e}")
         return None
 

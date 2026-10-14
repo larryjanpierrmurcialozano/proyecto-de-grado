@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "/mhouoXks5I=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Larry\\OneDrive\\Escritorio\\sexoooooo\\proyecto de grado\\backend-csharp\\ProyectoGrado.Api.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Larry\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
+    "C:\\Users\\Larry\\.nuget\\packages\\npgsql\\8.0.6\\npgsql.8.0.6.nupkg.sha512"
+  ],
+  "logs": []
+}

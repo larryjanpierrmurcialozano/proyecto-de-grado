@@ -17,19 +17,19 @@ from utils.database import db_config, cleanup_db_connections
 from utils.constants import RUTAS_PUBLICAS
 
 # Blueprints
-from routes.auth import auth_bp
-from routes.usuarios import usuarios_bp
-from routes.estudiantes import estudiantes_bp
-from routes.docentes import docentes_bp
-from routes.academico import academico_bp
-from routes.registros import registros_bp
-from routes.comunicados import comunicados_bp
-from routes.reportes import reportes_bp
-from routes.horarios import horarios_bp
-from routes.calificaciones import calificaciones_bp
-from routes.asistencia import asistencia_bp
-from routes.periodos import periodos_bp
-from routes.observador import observador_bp
+from routes.auth.routes import auth_bp
+from routes.usuarios.routes import usuarios_bp
+from routes.estudiantes.routes import estudiantes_bp
+from routes.docentes.routes import docentes_bp
+from routes.academico.routes import academico_bp
+from routes.registros.routes import registros_bp
+from routes.comunicados.routes import comunicados_bp
+from routes.reportes.routes import reportes_bp
+from routes.horarios.routes import horarios_bp
+from routes.calificaciones.routes import calificaciones_bp
+from routes.asistencia.routes import asistencia_bp
+from routes.periodos.routes import periodos_bp
+from routes.observador.routes import observador_bp
 # [DESHABILITADO PARA TECNÓLOGO] from routes.servicio_drive import drive_bp
 
 

@@ -8,7 +8,7 @@ conecta mediante `backend/utils/database.py`.
 
 La primera reorganizacion separa los recursos por responsabilidad:
 
-- `backend/routes/`: endpoints Flask existentes.
+- `backend/routes/<modulo>/`: blueprint Python y guia interna de cada modulo.
 - `backend/utils/`: conexion, helpers y constantes compartidas.
 - `frontend/`: templates, JavaScript, CSS e imagenes.
 - `storage/uploads/`: archivos subidos por usuarios.
@@ -24,6 +24,15 @@ negocio podra separar posteriormente sus rutas, servicios, repositorios y
 esquemas sin cambiar las URLs publicas.
 
 ```text
+backend/routes/
+  asistencia/
+    routes.py
+    README.md
+  calificaciones/
+    routes.py
+    README.md
+  ...
+
 backend/app/
   core/             # configuracion y errores comunes
   infrastructure/   # base de datos, archivos, correo e integraciones
