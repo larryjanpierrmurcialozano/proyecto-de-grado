@@ -108,9 +108,9 @@ def _upsert_asistencia_legacy(cursor, id_estudiante, id_grupo, id_periodo, fecha
     cursor.execute("""
         INSERT INTO asistencia (id_estudiante, id_grupo, id_periodo, fecha_asistencia, estado, observaciones)
         VALUES (%s, %s, %s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE
-            estado = VALUES(estado),
-            observaciones = VALUES(observaciones),
+        ON CONFLICT (id_estudiante, fecha_asistencia) DO UPDATE SET
+            estado = EXCLUDED.estado,
+            observaciones = EXCLUDED.observaciones,
             updated_at = NOW()
     """, (id_estudiante, id_grupo, id_periodo, fecha, estado_legacy, comentario))
 
@@ -292,7 +292,7 @@ def api_asistencia_tabla():
             # Cargar detalle existente
             cursor.execute("""
                 SELECT da.id_estudiante, da.asistio, da.comentario, da.justificante_id,
-                       IFNULL(ja.aprobado, 0) AS justificante_aprobado
+                       COALESCE(ja.aprobado, FALSE) AS justificante_aprobado
                 FROM detalle_asistencia da
                 LEFT JOIN justificantes_ausencia ja ON ja.id_justificante = da.justificante_id
                 WHERE da.id_asistencia_diaria = %s
@@ -410,7 +410,9 @@ def api_asistencia_guardar():
             cursor.execute("""
                 INSERT INTO detalle_asistencia (id_asistencia_diaria, id_estudiante, asistio, comentario)
                 VALUES (%s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE asistio = VALUES(asistio), comentario = VALUES(comentario)
+                ON CONFLICT (id_asistencia_diaria, id_estudiante) DO UPDATE SET
+                    asistio = EXCLUDED.asistio,
+                    comentario = EXCLUDED.comentario
             """, (id_sesion, id_est, asistio, comentario))
 
             id_asistencia_legacy = _upsert_asistencia_legacy(
@@ -453,9 +455,8 @@ def _recalcular_asistencias_periodo(cursor, conn, ids_estudiantes, materia_id, p
     for id_est in ids_estudiantes:
         cursor.execute("""
             SELECT
-                SUM(da.asistio = 'presente') as presencias,
-                SUM(
-                    da.asistio = 'ausente' AND NOT EXISTS (
+                COUNT(*) FILTER (WHERE da.asistio = 'presente') as presencias,
+                COUNT(*) FILTER (WHERE da.asistio = 'ausente' AND NOT EXISTS (
                         SELECT 1
                         FROM asistencia a
                         JOIN justificantes_ausencia ja ON ja.id_asistencia = a.id_asistencia
@@ -463,11 +464,11 @@ def _recalcular_asistencias_periodo(cursor, conn, ids_estudiantes, materia_id, p
                             AND a.id_grupo = ad.id_grupo
                             AND a.id_periodo = %s
                             AND a.fecha_asistencia = ad.fecha_registro
-                            AND ja.aprobado = 1
+                            AND ja.aprobado = TRUE
                     )
-                ) as ausencias,
-                SUM(da.asistio = 'tardio') as tardios,
-                SUM(da.asistio = 'no_registrado') as no_reg,
+                )) as ausencias,
+                COUNT(*) FILTER (WHERE da.asistio = 'tardio') as tardios,
+                COUNT(*) FILTER (WHERE da.asistio = 'no_registrado') as no_reg,
                 COUNT(*) as total
             FROM detalle_asistencia da
             JOIN asistencias_diarias ad ON da.id_asistencia_diaria = ad.id_asistencia_diaria
@@ -501,14 +502,13 @@ def _recalcular_asistencias_periodo(cursor, conn, ids_estudiantes, materia_id, p
                  total_tardios, total_no_registrados, total_clases_programadas,
                  porcentaje_asistencia, estado_asistencia)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-                total_presencias = VALUES(total_presencias),
-                total_ausencias = VALUES(total_ausencias),
-                total_tardios = VALUES(total_tardios),
-                total_no_registrados = VALUES(total_no_registrados),
-                total_clases_programadas = VALUES(total_clases_programadas),
-                porcentaje_asistencia = VALUES(porcentaje_asistencia),
-                estado_asistencia = VALUES(estado_asistencia)
+            ON CONFLICT (id_estudiante, id_materia, id_periodo) DO UPDATE SET
+                total_presencias = EXCLUDED.total_presencias,
+                total_ausencias = EXCLUDED.total_ausencias,
+                total_tardios = EXCLUDED.total_tardios,
+                total_no_registrados = EXCLUDED.total_no_registrados,
+                porcentaje_asistencia = EXCLUDED.porcentaje_asistencia,
+                estado_asistencia = EXCLUDED.estado_asistencia
         """, (id_est, materia_id, periodo_id, presencias, ausencias, tardios, no_reg, total, round(pct, 2), estado))
 
     conn.commit()
@@ -839,7 +839,7 @@ def api_asistencia_aprobar_justificante(id_justificante):
         if aprobado:
             cursor.execute("""
                 UPDATE justificantes_ausencia
-                SET aprobado = 1,
+                SET aprobado = TRUE,
                     aprobado_por = %s,
                     fecha_aprobacion = NOW()
                 WHERE id_justificante = %s
@@ -852,7 +852,7 @@ def api_asistencia_aprobar_justificante(id_justificante):
         else:
             cursor.execute("""
                 UPDATE justificantes_ausencia
-                SET aprobado = 0,
+                SET aprobado = FALSE,
                     aprobado_por = NULL,
                     fecha_aprobacion = NULL
                 WHERE id_justificante = %s
@@ -957,7 +957,7 @@ def api_asistencia_resumen():
                     AND ad.id_grupo = %s
                     AND ad.estado = 'activa'
                     AND da.asistio = 'ausente'
-                    AND ja.aprobado = 1
+                    AND ja.aprobado = TRUE
                 GROUP BY da.id_estudiante
             ) just ON just.id_estudiante = e.id_estudiante
             LEFT JOIN reportes_inasistencias ri ON e.id_estudiante = ri.id_estudiante
@@ -1084,7 +1084,7 @@ def api_reporte_general_asistencia():
                     AND ad.id_materia = %s
                     AND ad.estado = 'activa'
                     AND da.asistio = 'ausente'
-                    AND ja.aprobado = 1
+                    AND ja.aprobado = TRUE
                 GROUP BY da.id_estudiante
             ) just ON just.id_estudiante = e.id_estudiante
             WHERE e.id_grupo = %s AND e.estado = 'Activo'

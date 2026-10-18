@@ -21,8 +21,8 @@ def api_docentes():
              SELECT u.id_usuario, u.documento, u.nombre, u.apellido, u.correo, u.is_activo,
                  COUNT(DISTINCT a.id_asignacion) as total_asignaciones,
                  COUNT(DISTINCT a.id_grado) as total_grados,
-                 GROUP_CONCAT(DISTINCT m.nombre_materia ORDER BY m.nombre_materia SEPARATOR ', ') AS materias,
-                 GROUP_CONCAT(DISTINCT g.nombre_grado ORDER BY g.numero_grado SEPARATOR ', ') AS grados
+                 STRING_AGG(DISTINCT m.nombre_materia, ', ' ORDER BY m.nombre_materia) AS materias,
+                 STRING_AGG(DISTINCT g.nombre_grado, ', ' ORDER BY g.nombre_grado) AS grados
              FROM usuarios u
              LEFT JOIN asignaciones_docente a ON u.id_usuario = a.id_usuario AND a.estado = 'Activa'
              LEFT JOIN materias m ON a.id_materia = m.id_materia
@@ -48,7 +48,7 @@ def api_docentes_disponibles():
         cursor.execute("""
             SELECT u.id_usuario, u.documento, u.nombre, u.apellido, u.correo, u.is_activo
             FROM usuarios u
-            WHERE u.id_rol = 4 AND u.is_activo = 1
+            WHERE u.id_rol = 4 AND u.is_activo = TRUE
             ORDER BY u.apellido, u.nombre
         """)
         docentes = cursor.fetchall()
@@ -167,7 +167,7 @@ def api_docente_mis_materias():
         cursor = conn.cursor(dictionary=True)
         cursor.execute("""
             SELECT DISTINCT m.id_materia, m.nombre_materia, m.codigo_materia, m.intensidad_horaria,
-                   GROUP_CONCAT(DISTINCT gr.nombre_grado ORDER BY gr.numero_grado SEPARATOR ', ') as grados
+                   STRING_AGG(DISTINCT gr.nombre_grado, ', ' ORDER BY gr.nombre_grado) as grados
             FROM asignaciones_docente a
             JOIN materias m ON a.id_materia = m.id_materia
             JOIN grados gr ON a.id_grado = gr.id_grado
@@ -200,7 +200,9 @@ def api_docente_mi_horario():
             JOIN asignaciones_docente a ON h.id_asignacion = a.id_asignacion
             JOIN materias m ON a.id_materia = m.id_materia
             WHERE a.id_usuario = %s
-            ORDER BY FIELD(h.dia_semana, 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'), h.hora_inicio
+            ORDER BY CASE h.dia_semana
+                WHEN 'Lunes' THEN 1 WHEN 'Martes' THEN 2 WHEN 'Miércoles' THEN 3
+                WHEN 'Jueves' THEN 4 WHEN 'Viernes' THEN 5 ELSE 6 END, h.hora_inicio
         """, (session['user_id'],))
         horario = cursor.fetchall()
 

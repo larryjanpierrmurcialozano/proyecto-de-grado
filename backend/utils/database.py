@@ -39,6 +39,25 @@ except psycopg.Error as e:
 # automatica al final de cada request Flask (teardown_appcontext).
 # ════════════════════════════════════════════════════════════════════════════════
 
+class SafeCursor:
+    """Cursor compatible con los usos heredados del conector MySQL."""
+
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    @property
+    def lastrowid(self):
+        """Devuelve el último ID generado por una secuencia PostgreSQL."""
+        self._cursor.execute("SELECT LASTVAL() AS id")
+        row = self._cursor.fetchone()
+        if isinstance(row, dict):
+            return next(iter(row.values()))
+        return row[0] if row else None
+
+    def __getattr__(self, name):
+        return getattr(self._cursor, name)
+
+
 class SafeConnection:
     """Envuelve una conexion PostgreSQL para centralizar su cierre.
 
@@ -60,7 +79,7 @@ class SafeConnection:
     def cursor(self, *args, dictionary=False, **kwargs):
         if dictionary:
             kwargs['row_factory'] = dict_row
-        return self._conn.cursor(*args, **kwargs)
+        return SafeCursor(self._conn.cursor(*args, **kwargs))
 
     def __getattr__(self, name):
         return getattr(self._conn, name)

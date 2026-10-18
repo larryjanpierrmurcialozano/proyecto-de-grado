@@ -4,7 +4,7 @@
 # ════════════════════════════════════════════════════════════════════════════════
 
 from flask import Blueprint, jsonify, request
-import mysql.connector
+import psycopg
 from datetime import datetime
 from utils.database import get_db
 from utils.helpers import _error_interno
@@ -27,7 +27,7 @@ def api_grados():
             LEFT JOIN niveles n ON g.id_nivel = n.id_nivel
             LEFT JOIN grupos gr ON g.id_grado = gr.id_grado
             LEFT JOIN estudiantes e ON gr.id_grupo = e.id_grupo AND e.estado = 'Activo'
-            GROUP BY g.id_grado
+            GROUP BY g.id_grado, n.nombre_nivel
             ORDER BY g.numero_grado
         """)
         grados = cursor.fetchall()
@@ -244,8 +244,8 @@ def api_grupo_delete(id):
         cursor.close()
         conn.close()
         return jsonify({'status': 'ok'}), 200
-    except mysql.connector.IntegrityError as e:
-        if getattr(e, 'errno', None) == 1451 or 'fk_estudiantes_grupo' in str(e):
+    except psycopg.IntegrityError as e:
+        if 'fk_estudiantes_grupo' in str(e) or 'violates foreign key' in str(e).lower():
             return jsonify({'error': 'No se puede eliminar sin antes verificar que no hayan estudiantes dentro de este grupo'}), 400
         return _error_interno(e)
     except Exception as e:
@@ -281,8 +281,8 @@ def api_materias():
         cursor.execute("""
             SELECT m.*,
                    COUNT(DISTINCT a.id_usuario) as total_docentes,
-                   GROUP_CONCAT(DISTINCT g.id_grado ORDER BY g.numero_grado SEPARATOR ',') as grados_ids,
-                   GROUP_CONCAT(DISTINCT g.nombre_grado ORDER BY g.numero_grado SEPARATOR ', ') as grados_nombres
+                   STRING_AGG(DISTINCT g.id_grado::text, ',' ORDER BY g.id_grado::text) as grados_ids,
+                   STRING_AGG(DISTINCT g.nombre_grado, ', ' ORDER BY g.nombre_grado) as grados_nombres
             FROM materias m
             LEFT JOIN asignaciones_docente a ON m.id_materia = a.id_materia AND a.estado = 'Activa'
             LEFT JOIN grados g ON a.id_grado = g.id_grado

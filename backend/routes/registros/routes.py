@@ -23,11 +23,10 @@ def api_asistencia():
 
         query = """
             SELECT a.*, e.nombre as estudiante_nombre, e.apellido as estudiante_apellido,
-                   g.codigo_grupo, m.nombre_materia
+                   g.codigo_grupo
             FROM asistencia a
             JOIN estudiantes e ON a.id_estudiante = e.id_estudiante
             JOIN grupos g ON a.id_grupo = g.id_grupo
-            LEFT JOIN materias m ON a.id_materia = m.id_materia
             WHERE 1=1
         """
         params = []
@@ -35,10 +34,10 @@ def api_asistencia():
             query += " AND a.id_grupo = %s"
             params.append(grupo_id)
         if fecha:
-            query += " AND a.fecha = %s"
+            query += " AND a.fecha_asistencia = %s"
             params.append(fecha)
 
-        cursor.execute(query + " ORDER BY a.fecha DESC, e.apellido", params)
+        cursor.execute(query + " ORDER BY a.fecha_asistencia DESC, e.apellido", params)
         asistencia = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -56,12 +55,23 @@ def api_asistencia_registrar():
         cursor = conn.cursor()
 
         for registro in data['registros']:
+            id_periodo = registro.get('id_periodo')
+            if not id_periodo:
+                cursor.execute(
+                    "SELECT id_periodo FROM periodos WHERE estado = 'Abierto' ORDER BY numero_periodo LIMIT 1"
+                )
+                periodo = cursor.fetchone()
+                id_periodo = periodo[0] if periodo else None
+            if not id_periodo:
+                return jsonify({'error': 'No hay un período abierto'}), 400
             cursor.execute("""
-                INSERT INTO asistencia (id_estudiante, id_grupo, id_materia, id_docente, fecha, estado, observaciones)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE estado = VALUES(estado), observaciones = VALUES(observaciones)
-            """, (registro['id_estudiante'], registro['id_grupo'], registro.get('id_materia'),
-                  session.get('user_id'), registro['fecha'], registro['estado'],
+                INSERT INTO asistencia
+                    (id_estudiante, id_grupo, id_periodo, fecha_asistencia, estado, observaciones)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id_estudiante, fecha_asistencia) DO UPDATE SET
+                    estado = EXCLUDED.estado, observaciones = EXCLUDED.observaciones
+            """, (registro['id_estudiante'], registro['id_grupo'], id_periodo,
+                  registro['fecha'], registro['estado'],
                   registro.get('observaciones')))
 
         conn.commit()

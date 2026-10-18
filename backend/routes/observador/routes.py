@@ -66,7 +66,7 @@ def _normalizar_observacion(row, cols):
 			row[key] = _obs_iso(row[key])
 
 	if 'acudiente_notificado' in cols and row.get('acudiente_notificado') is not None:
-		row['acudiente_notificado'] = 1 if int(row['acudiente_notificado']) == 1 else 0
+		row['acudiente_notificado'] = bool(row['acudiente_notificado'])
 
 	return row
 
@@ -476,7 +476,7 @@ def api_observador_crear():
 		for field in optional_fields:
 			if field in cols and data.get(field) not in (None, ''):
 				if field == 'acudiente_notificado':
-					payload[field] = 1 if bool(data.get(field)) else 0
+					payload[field] = bool(data.get(field))
 				elif field == 'id_materia':
 					payload[field] = int(data.get(field))
 				else:
@@ -539,7 +539,7 @@ def api_observador_actualizar(id_observacion):
 			if col_name in cols and payload_key in data:
 				value = data.get(payload_key)
 				if col_name == 'acudiente_notificado':
-					updates[col_name] = 1 if bool(value) else 0
+					updates[col_name] = bool(value)
 				elif col_name == 'id_materia' and value not in (None, ''):
 					updates[col_name] = int(value)
 				else:

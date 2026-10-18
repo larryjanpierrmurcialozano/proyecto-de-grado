@@ -3,7 +3,7 @@
 # ════════════════════════════════════════════════════════════════════════════════
 
 from flask import Blueprint, jsonify, request
-import mysql.connector
+import psycopg
 from utils.database import get_db
 from utils.helpers import _error_interno, hash_password, log_action, role_required
 
@@ -66,7 +66,7 @@ def api_usuario_crear():
 
         cursor.execute("""
             INSERT INTO usuarios (documento, nombre, apellido, correo, contrasena_hash, id_rol, is_activo)
-            VALUES (%s, %s, %s, %s, %s, %s, 1)
+            VALUES (%s, %s, %s, %s, %s, %s, TRUE)
         """, (data['documento'], data['nombre'], data['apellido'], data['correo'],
               hash_password(data.get('password', '123456')), data['id_rol']))
 
@@ -207,7 +207,7 @@ def api_usuario_eliminar(current_user, id_usuario):
 
         return jsonify({'message': 'Usuario eliminado permanentemente.'}), 200
 
-    except mysql.connector.Error:
+    except psycopg.Error:
         if conn:
             conn.rollback()
         return _error_interno(Exception('Error de base de datos al eliminar usuario'))

@@ -32,7 +32,7 @@ def api_comunicados():
                 SELECT c.*, u.nombre as autor_nombre, u.apellido as autor_apellido
                 FROM comunicados_rectoria c
                 JOIN usuarios u ON c.id_usuario = u.id_usuario
-                WHERE c.activo = 1 AND c.audiencia IN ('Todos', 'Docentes')
+                WHERE c.activo = TRUE AND c.audiencia IN ('Todos', 'Docentes')
                 ORDER BY c.fecha_publicacion DESC
             """)
         else:
@@ -40,7 +40,7 @@ def api_comunicados():
                 SELECT c.*, u.nombre as autor_nombre, u.apellido as autor_apellido
                 FROM comunicados_rectoria c
                 JOIN usuarios u ON c.id_usuario = u.id_usuario
-                WHERE c.activo = 1
+                WHERE c.activo = TRUE
                 ORDER BY c.fecha_publicacion DESC
             """)
 
@@ -76,7 +76,7 @@ def api_comunicado_crear():
         cursor.execute("""
             INSERT INTO comunicados_rectoria
             (id_usuario, titulo, contenido, tipo_comunicado, audiencia, prioridad, fecha_publicacion, activo)
-            VALUES (%s, %s, %s, %s, %s, %s, NOW(), 1)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW(), TRUE)
         """, (
             session['user_id'],
             data['titulo'],

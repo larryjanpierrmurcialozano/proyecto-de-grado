@@ -50,7 +50,9 @@ def api_horarios():
             query += " AND u.id_usuario = %s"
             params.append(docente_id)
 
-        query += " ORDER BY FIELD(h.dia_semana,'Lunes','Martes','Miércoles','Jueves','Viernes'), h.hora_inicio"
+        query += """ ORDER BY CASE h.dia_semana
+            WHEN 'Lunes' THEN 1 WHEN 'Martes' THEN 2 WHEN 'Miércoles' THEN 3
+            WHEN 'Jueves' THEN 4 WHEN 'Viernes' THEN 5 ELSE 6 END, h.hora_inicio"""
         cursor.execute(query, tuple(params))
         horarios = cursor.fetchall()
 

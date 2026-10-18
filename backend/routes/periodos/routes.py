@@ -71,25 +71,21 @@ def api_periodos_reset_ciclo():
 
 		registros_db = 0
 		errores_tablas = []
-		cursor.execute("SET SQL_SAFE_UPDATES = 0")
-		cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
 		for tabla in tablas_objetivo:
 			try:
-				cursor.execute(f"SELECT COUNT(*) AS total FROM `{tabla}`")
+				cursor.execute(f'SELECT COUNT(*) AS total FROM "{tabla}"')
 				row = cursor.fetchone() or {}
 				registros_db += int(row.get('total') or 0)
 				# WHERE 1 evita problemas en algunos motores/configuraciones con DELETE masivo.
-				cursor.execute(f"DELETE FROM `{tabla}` WHERE 1")
+				cursor.execute(f'DELETE FROM "{tabla}"')
 				tablas_existentes.append(tabla)
 				try:
-					cursor.execute(f"ALTER TABLE `{tabla}` AUTO_INCREMENT = 1")
+					cursor.execute(f'ALTER SEQUENCE IF EXISTS "{tabla}_id_{tabla}_seq" RESTART WITH 1')
 				except Exception:
 					pass
 			except Exception as tabla_err:
 				# Tabla inexistente/no accesible: continuar con las demás.
 				errores_tablas.append({'tabla': tabla, 'error': str(tabla_err)})
-		cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
-		cursor.execute("SET SQL_SAFE_UPDATES = 1")
 
 		# Limpieza de archivos trabajados por docentes.
 		_here = os.path.dirname(os.path.abspath(__file__))
@@ -119,11 +115,6 @@ def api_periodos_reset_ciclo():
 		return _error_interno(e)
 	finally:
 		if cursor:
-			try:
-				cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
-				cursor.execute("SET SQL_SAFE_UPDATES = 1")
-			except Exception:
-				pass
 			try:
 				cursor.close()
 			except Exception:

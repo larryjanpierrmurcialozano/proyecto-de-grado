@@ -62,7 +62,7 @@ def api_login():
             SELECT u.id_usuario, u.nombre, u.apellido, u.correo, u.contrasena_hash, r.nombre_rol
             FROM usuarios u
             JOIN roles r ON u.id_rol = r.id_rol
-            WHERE u.correo = %s AND u.is_activo = 1
+            WHERE u.correo = %s AND u.is_activo = true
         """, (data['email'],))
 
         usuario = cursor.fetchone()
@@ -128,7 +128,7 @@ def api_register():
         # Insertar usuario (rol por defecto: Profesor = 4)
         cursor.execute("""
             INSERT INTO usuarios (documento, nombre, apellido, correo, contrasena_hash, id_rol, is_activo)
-            VALUES (%s, %s, %s, %s, %s, 4, 1)
+            VALUES (%s, %s, %s, %s, %s, 4, TRUE)
         """, (
             data['documento'],
             data['nombre'],
@@ -279,7 +279,7 @@ def api_dashboard_stats():
         cursor.execute("SELECT COUNT(*) as total FROM estudiantes WHERE estado = 'Activo'")
         stats['estudiantes'] = cursor.fetchone()['total']
 
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE id_rol = 4 AND is_activo = 1")
+        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE id_rol = 4 AND is_activo = TRUE")
         stats['docentes'] = cursor.fetchone()['total']
 
         cursor.execute("SELECT COUNT(*) as total FROM grupos")
@@ -297,7 +297,7 @@ def api_dashboard_stats():
                 (SUM(CASE WHEN estado = 'Presente' THEN 1 ELSE 0 END) * 100.0) / NULLIF(COUNT(*), 0), 1
             ) as promedio
             FROM asistencia
-            WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            WHERE fecha >= CURRENT_DATE - INTERVAL '30 days'
         """)
         prom = cursor.fetchone()
         stats['asistencia_promedio'] = prom['promedio'] if prom and prom['promedio'] else 0
