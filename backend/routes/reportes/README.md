@@ -5,4 +5,4 @@
 - Tablas principales: `log_registro`, `reportes_inasistencias`, `usuarios`.
 - Configuracion: SMTP en `backend/.env`.
 - PostgreSQL/C#: separar reportes, correo y auditoria en servicios independientes.
-- Estado PostgreSQL: consulta de logs validada; revisar DDL y upserts restantes.
+- Estado PostgreSQL: revisar DDL y escrituras contra el esquema migrado.

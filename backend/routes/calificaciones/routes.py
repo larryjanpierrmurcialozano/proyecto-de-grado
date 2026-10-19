@@ -57,7 +57,7 @@
 
 # --------------------------------------------------------------------------------
 # Este módulo se basa en un enfoque híbrido, combinando la flexibilidad de uso de 
-# archivos Excel (carpetas locales) con la rapidez y seguridad de una Base de Datos (MySQL).
+# archivos Excel (carpetas locales) con la rapidez y seguridad de PostgreSQL.
 #
 # 1. ALMACENAMIENTO FÍSICO JERÁRQUICO (El corazón local/offline):
 #    - El sistema será el encargado ÚNICO de CREAR los archivos Excel.

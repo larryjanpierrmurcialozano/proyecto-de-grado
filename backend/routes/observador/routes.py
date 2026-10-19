@@ -20,8 +20,15 @@ observador_bp = Blueprint('observador', __name__)
 
 
 def _get_observador_columns(cursor):
-	cursor.execute("SHOW COLUMNS FROM observador")
-	return {row['Field'] for row in cursor.fetchall()}
+	cursor.execute(
+		"""
+		SELECT column_name
+		FROM information_schema.columns
+		WHERE table_schema = current_schema() AND table_name = %s
+		""",
+		('observador',)
+	)
+	return {row['column_name'] for row in cursor.fetchall()}
 
 
 def _get_usuario_column(cols):

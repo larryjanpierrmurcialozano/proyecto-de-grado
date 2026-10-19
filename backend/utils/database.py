@@ -11,11 +11,12 @@ from psycopg.rows import dict_row
 load_dotenv()
 
 db_config = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'port': int(os.getenv('DB_PORT', 5432)),
-    'user': os.getenv('DB_USER', 'docstry_app'),
-    'password': os.getenv('DB_PASSWORD', 'change_me_locally'),
-    'database': os.getenv('DB_NAME', 'anexo_de_datos')
+    'host': os.getenv('DB_HOST', os.getenv('POSTGRES_HOST', 'localhost')),
+    'port': int(os.getenv('DB_PORT', os.getenv('POSTGRES_PORT', 5432))),
+    'user': os.getenv('DB_USER', os.getenv('POSTGRES_USER', 'docstry_app')),
+    'password': os.getenv('DB_PASSWORD', os.getenv('POSTGRES_PASSWORD', 'change_me_locally')),
+    'database': os.getenv('DB_NAME', os.getenv('POSTGRES_DB', 'anexo_de_datos')),
+    'sslmode': os.getenv('DB_SSLMODE', 'prefer')
 }
 
 try:
@@ -24,7 +25,8 @@ try:
         port=db_config['port'],
         user=db_config['user'],
         password=db_config['password'],
-        dbname=db_config['database']
+        dbname=db_config['database'],
+        sslmode=db_config['sslmode']
     )
     db_pool.close()
     db_pool = True
@@ -40,7 +42,7 @@ except psycopg.Error as e:
 # ════════════════════════════════════════════════════════════════════════════════
 
 class SafeCursor:
-    """Cursor compatible con los usos heredados del conector MySQL."""
+    """Adapta la interfaz de cursor usada por las rutas al driver psycopg."""
 
     def __init__(self, cursor):
         self._cursor = cursor
@@ -106,7 +108,8 @@ def get_db():
             port=db_config['port'],
             user=db_config['user'],
             password=db_config['password'],
-            dbname=db_config['database']
+            dbname=db_config['database'],
+            sslmode=db_config['sslmode']
         )
         conn = SafeConnection(raw)
         # Registrar para cierre automatico al final del request

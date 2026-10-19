@@ -923,7 +923,7 @@ def _generar_boletin_excel(cursor, estudiante_id, periodo_id, *, save_path=None)
             cursor.execute(
                 """
                 INSERT INTO boletin_puestos (id_estudiante, id_grupo, id_periodo, es_definitiva, promedio, total_fallas, puesto)
-                VALUES (%s, %s, %s, 0, %s, %s, %s)
+                VALUES (%s, %s, %s, FALSE, %s, %s, %s)
                 ON CONFLICT (id_estudiante, id_grupo, id_periodo, es_definitiva) DO UPDATE SET
                     promedio = EXCLUDED.promedio, total_fallas = EXCLUDED.total_fallas,
                     puesto = EXCLUDED.puesto, fecha_generado = CURRENT_TIMESTAMP
@@ -937,7 +937,7 @@ def _generar_boletin_excel(cursor, estudiante_id, periodo_id, *, save_path=None)
         cursor.execute(
             """
             INSERT INTO boletin_puestos (id_estudiante, id_grupo, id_periodo, es_definitiva, promedio, total_fallas, puesto)
-            VALUES (%s, %s, 0, 1, %s, %s, %s)
+            VALUES (%s, %s, 0, TRUE, %s, %s, %s)
             ON CONFLICT (id_estudiante, id_grupo, id_periodo, es_definitiva) DO UPDATE SET
                 promedio = EXCLUDED.promedio, total_fallas = EXCLUDED.total_fallas,
                 puesto = EXCLUDED.puesto, fecha_generado = CURRENT_TIMESTAMP
@@ -1158,6 +1158,11 @@ def api_boletin_generar_archivo():
             download_name=os.path.basename(ruta_xlsx)
         )
 
+    except ValueError as e:
+        if str(e) == 'No hay materias asignadas a este grupo':
+            return jsonify({'error': 'Faltan datos sin asignar para descargar correctamente el boletín.'}), 404
+        print(f"Error en api_boletin_generar_archivo: {e}")
+        return _error_interno(e)
     except Exception as e:
         print(f"Error en api_boletin_generar_archivo: {e}")
         return _error_interno(e)

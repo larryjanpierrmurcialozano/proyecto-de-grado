@@ -529,7 +529,7 @@ def _actualizar_reportes_inasistencia(cursor, conn, ids_estudiantes, materia_id,
         total = int(row['total_clases_programadas'] or 0)
         ausencias = int(row['total_ausencias'] or 0)
         pct_inasist = (ausencias / total * 100) if total > 0 else 0
-        es_critica = 1 if pct_inasist > 20 else 0
+        es_critica = pct_inasist > 20
 
         if ausencias > 0:
             # reportes_inasistencias no tiene UNIQUE KEY → usar SELECT + INSERT/UPDATE
@@ -1012,7 +1012,7 @@ def api_reporte_general_asistencia():
                 m.nombre_materia,
                 p.numero_periodo,
                 p.nombre_periodo,
-                YEAR(p.fecha_inicio) AS anio_lectivo
+                EXTRACT(YEAR FROM p.fecha_inicio)::integer AS anio_lectivo
             FROM grados g
             JOIN grupos gr ON gr.id_grado = g.id_grado
             JOIN materias m ON m.id_materia = %s

@@ -161,7 +161,7 @@ def api_grupos():
             FROM grupos g
             JOIN grados gr ON g.id_grado = gr.id_grado
             LEFT JOIN estudiantes e ON g.id_grupo = e.id_grupo AND e.estado = 'Activo'
-            GROUP BY g.id_grupo
+            GROUP BY g.id_grupo, gr.id_grado, gr.nombre_grado, gr.numero_grado
             ORDER BY gr.numero_grado, g.codigo_grupo
         """)
         grupos = cursor.fetchall()
@@ -552,4 +552,4 @@ def api_asignacion_eliminar(id):
     except Exception as e:
         return _error_interno(e)
 
-    
+

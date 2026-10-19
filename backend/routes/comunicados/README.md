@@ -5,4 +5,5 @@
 - Tabla principal: `comunicados_rectoria`.
 - Valores de `audiencia`: `Todos`, `Estudiantes`, `Docentes`, `Padres`, `Administrativo`.
 - PostgreSQL/C#: conservar validacion de enum y permisos administrativos.
-- Estado PostgreSQL: endpoints de lectura validados.
+- Estado PostgreSQL: usa la conexion `psycopg`; falta validar lecturas y
+  escrituras contra la instancia migrada.

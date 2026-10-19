@@ -56,7 +56,7 @@ def api_periodos_reset_ciclo():
 			'notas', 'actividades_periodo', 'actividades',
 			# Asistencias
 			'detalle_asistencia', 'asistencias_diarias', 'asistencias_por_periodo',
-			'asistencia', 'justificantes_ausencia',
+			'justificantes_ausencia', 'asistencia',
 			# Observador
 			'observador', 'observador_anotaciones', 'observador_descargos', 'observador_compromisos',
 			# Comunicados
@@ -64,26 +64,48 @@ def api_periodos_reset_ciclo():
 			# Reportes
 			'reportes', 'reportes_generados'
 		]
+		columnas_id = {
+			'notas': 'id_nota',
+			'actividades_periodo': 'id_actividad_periodo',
+			'actividades': 'id_actividad',
+			'detalle_asistencia': 'id_detalle_asistencia',
+			'asistencias_diarias': 'id_asistencia_diaria',
+			'asistencias_por_periodo': 'id_asistencia_periodo',
+			'justificantes_ausencia': 'id_justificante',
+			'asistencia': 'id_asistencia',
+			'observador': 'id_observacion'
+		}
 
-		# No dependemos de information_schema para evitar fallos por permisos.
-		# Se intenta borrar tabla por tabla de forma tolerante.
+		# Se valida cada tabla en el esquema public antes de intentar limpiarla.
 		tablas_existentes = []
 
 		registros_db = 0
 		errores_tablas = []
 		for tabla in tablas_objetivo:
+			cursor.execute("SELECT to_regclass(%s) AS tabla", (f'public.{tabla}',))
+			if not (cursor.fetchone() or {}).get('tabla'):
+				continue
+
+			cursor.execute('SAVEPOINT reset_tabla')
 			try:
 				cursor.execute(f'SELECT COUNT(*) AS total FROM "{tabla}"')
 				row = cursor.fetchone() or {}
-				registros_db += int(row.get('total') or 0)
-				# WHERE 1 evita problemas en algunos motores/configuraciones con DELETE masivo.
 				cursor.execute(f'DELETE FROM "{tabla}"')
+				columna_id = columnas_id.get(tabla)
+				if columna_id:
+					cursor.execute(
+						'SELECT pg_get_serial_sequence(%s, %s) AS secuencia',
+						(f'public.{tabla}', columna_id)
+					)
+					secuencia = (cursor.fetchone() or {}).get('secuencia')
+					if secuencia:
+						cursor.execute('SELECT setval(%s::regclass, 1, false)', (secuencia,))
+				cursor.execute('RELEASE SAVEPOINT reset_tabla')
+				registros_db += int(row.get('total') or 0)
 				tablas_existentes.append(tabla)
-				try:
-					cursor.execute(f'ALTER SEQUENCE IF EXISTS "{tabla}_id_{tabla}_seq" RESTART WITH 1')
-				except Exception:
-					pass
 			except Exception as tabla_err:
+				cursor.execute('ROLLBACK TO SAVEPOINT reset_tabla')
+				cursor.execute('RELEASE SAVEPOINT reset_tabla')
 				# Tabla inexistente/no accesible: continuar con las demás.
 				errores_tablas.append({'tabla': tabla, 'error': str(tabla_err)})
 

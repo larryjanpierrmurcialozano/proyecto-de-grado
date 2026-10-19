@@ -6,6 +6,9 @@ bloque Python antes de reconstruirlo en C#.
 ## Estados
 
 - `pendiente`: aun no revisado.
+- `sintaxis PostgreSQL`: no se encontraron construcciones MySQL en la ruta activa;
+  requiere validacion contra el esquema real.
+- `revisar instancia`: quedan consultas o DDL por contrastar con la base migrada.
 - `postgres`: SQL principal compatible.
 - `validado`: probado contra el contenedor PostgreSQL.
 - `csharp`: reconstruido en .NET.
@@ -15,17 +18,17 @@ bloque Python antes de reconstruirlo en C#.
 | Modulo | Python | PostgreSQL | C# | Referencia |
 |---|---|---|---|---|
 | Conexion | `utils/database.py` | validado | pendiente | `utils/database.py` |
-| Auth | `routes/auth/` | pendiente | en progreso | `routes/auth/README.md`, `backend-csharp/Modules/Auth/` |
-| Usuarios | `routes/usuarios/` | parcial | en progreso | `routes/usuarios/README.md`, `backend-csharp/Modules/Usuarios/` |
-| Estudiantes | `routes/estudiantes/` | parcial | pendiente | `routes/estudiantes/README.md` |
-| Academico | `routes/academico/` | parcial | pendiente | `routes/academico/README.md` |
-| Comunicados | `routes/comunicados/` | validado | pendiente | `routes/comunicados/README.md` |
-| Logs y reportes | `routes/reportes/` | parcial | pendiente | `routes/reportes/README.md` |
-| Asistencia | `routes/asistencia/` | en progreso | pendiente | `routes/asistencia/README.md` |
-| Horarios | `routes/horarios/` | pendiente | pendiente | `routes/horarios/README.md` |
-| Calificaciones | `routes/calificaciones/` | pendiente | pendiente | `routes/calificaciones/README.md` |
-| Periodos | `routes/periodos/` | pendiente | pendiente | `routes/periodos/README.md` |
-| Observador | `routes/observador/` | pendiente | pendiente | `routes/observador/README.md` |
+| Auth | `routes/auth/` | sintaxis PostgreSQL | en progreso | `routes/auth/README.md`, `backend-csharp/Modules/Auth/` |
+| Usuarios | `routes/usuarios/` | sintaxis PostgreSQL | en progreso | `routes/usuarios/README.md`, `backend-csharp/Modules/Usuarios/` |
+| Estudiantes | `routes/estudiantes/` | sintaxis PostgreSQL | pendiente | `routes/estudiantes/README.md` |
+| Academico | `routes/academico/` | sintaxis PostgreSQL | pendiente | `routes/academico/README.md` |
+| Comunicados | `routes/comunicados/` | sintaxis PostgreSQL | pendiente | `routes/comunicados/README.md` |
+| Logs y reportes | `routes/reportes/` | revisar instancia | pendiente | `routes/reportes/README.md` |
+| Asistencia | `routes/asistencia/` | sintaxis PostgreSQL | pendiente | `routes/asistencia/README.md` |
+| Horarios | `routes/horarios/` | sintaxis PostgreSQL | pendiente | `routes/horarios/README.md` |
+| Calificaciones | `routes/calificaciones/` | revisar instancia | pendiente | `routes/calificaciones/README.md` |
+| Periodos | `routes/periodos/` | sintaxis PostgreSQL | pendiente | `routes/periodos/README.md` |
+| Observador | `routes/observador/` | sintaxis PostgreSQL | pendiente | `routes/observador/README.md` |
 | Legacy | `routes/legacy/` | excluido | excluido | `routes/legacy/README.md` |
 
 ## Regla de migracion SQL

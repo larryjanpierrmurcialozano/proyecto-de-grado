@@ -1,29 +1,33 @@
 # Migracion de MySQL a PostgreSQL
 
-Este documento define una migracion reproducible de la base `anexo_de_datos`
-desde MySQL hacia PostgreSQL sin cambiar inicialmente las URLs ni el contrato
-funcional de la aplicacion.
+La configuracion activa del backend usa PostgreSQL con `psycopg 3`. Este
+documento conserva los pasos para migrar los datos historicos desde MySQL y
+describe las comprobaciones que aun deben hacerse contra la instancia destino.
 
-La base actual tiene 27 tablas, relaciones foraneas, datos iniciales y un
-trigger de auditoria para estudiantes. El archivo SQL de MySQL no debe
+El backup PostgreSQL disponible en `storage/backups/` contiene 27 tablas,
+relaciones foraneas, datos iniciales y secuencias. No hay un dump MySQL en el
+repositorio para comparar ambas bases. El dump PostgreSQL no incluye el trigger
+de auditoria de estudiantes; su definicion esta en
+`scripts/database/trigger_delete_estudiante.sql` y debe instalarse aparte.
+El archivo SQL de MySQL no debe
 ejecutarse directamente en PostgreSQL: contiene sintaxis propia de MySQL como
 `AUTO_INCREMENT`, `ENUM`, backticks, `ON DUPLICATE KEY`, `INSERT IGNORE` y
 `DELIMITER`.
 
 ## Estrategia recomendada
 
-Usar `pgloader` para la primera transferencia de estructura y datos. Luego
-corregir manualmente los tipos, restricciones y triggers que dependan de la
-semantica de MySQL. La aplicacion debe migrarse despues, modulo por modulo.
+Para instalaciones pendientes, usar `pgloader` en la primera transferencia
+de estructura y datos y corregir los tipos, restricciones y triggers que
+dependan de la semantica de MySQL.
 
-Orden:
+Orden de migracion de datos (para instalaciones que aun no la hayan completado):
 
 1. Crear PostgreSQL y un usuario de aplicacion.
-2. Ejecutar la carga de `scripts/database/mysql-to-postgres.load`.
+2. Ejecutar `pgloader` con una configuracion local que no se versiona.
 3. Revisar tablas, claves, secuencias y conteos.
-4. Crear o adaptar los triggers y restricciones PostgreSQL.
-5. Cambiar la capa de acceso de `mysql-connector-python` a `psycopg`.
-6. Probar cada modulo antes de retirar MySQL.
+4. Crear las restricciones y triggers PostgreSQL.
+5. Configurar el backend con los valores `DB_*` o `POSTGRES_*`.
+6. Validar cada modulo y sus tablas contra la instancia PostgreSQL migrada.
 
 ## Requisitos
 
@@ -83,17 +87,18 @@ GRANT USAGE, CREATE ON SCHEMA public TO docstry_app;
 
 ## Ejecutar transferencia
 
-El archivo de carga usa la base MySQL existente como origen y PostgreSQL como
-destino. Copia el archivo y reemplaza los marcadores de conexion localmente:
+La configuracion de `pgloader` debe usar la base MySQL existente como origen y
+PostgreSQL como destino. No hay un archivo `.load` versionado en este
+repositorio; crea uno local y no incluyas credenciales reales en Git:
 
 ```text
-scripts/database/mysql-to-postgres.load
+mysql://USUARIO:CLAVE@HOST/BASE -> postgresql://USUARIO:CLAVE@HOST/BASE
 ```
 
 Ejemplo desde WSL o Linux:
 
 ```bash
-pgloader scripts/database/mysql-to-postgres.load
+pgloader ruta/al/archivo-local.load
 ```
 
 La carga debe ejecutarse sobre una base PostgreSQL vacia. Para repetirla,
@@ -119,9 +124,9 @@ WHERE contype = 'f'
 ORDER BY conname;
 ```
 
-Los conteos deben compararse con el origen antes de cambiar la aplicacion.
-Como referencia del estado actual, el backup restaurado contiene 27 tablas,
-6 usuarios, 176 estudiantes y 11 registros en `log_registro`.
+Los conteos deben compararse con el origen antes de cambiar la aplicacion. El
+backup version local disponible fue generado el 30 de septiembre de 2026 y no
+confirma por si solo el estado actual de la base en ejecucion.
 
 ## Compatibilidad de tipos
 
@@ -142,10 +147,11 @@ sus valores durante esta migracion.
 
 ## Cambios necesarios en la aplicacion
 
-La migracion de datos no hace que el codigo Python sea compatible
-automaticamente. Antes de cambiar `DB_*`, hay que reemplazar:
+Las rutas Flask activas usan `psycopg 3`; las consultas compartidas conservan
+`%s` como placeholder, que `psycopg` acepta. Para migrar SQL adicional desde
+MySQL, aplica estas conversiones:
 
-- `mysql.connector` por `psycopg` y un pool PostgreSQL.
+- `mysql.connector` por `psycopg`.
 - Comillas invertidas de SQL por identificadores normales o comillas dobles.
 - `INSERT IGNORE` por `ON CONFLICT DO NOTHING`.
 - `ON DUPLICATE KEY UPDATE` por `ON CONFLICT (...) DO UPDATE`.
@@ -156,41 +162,37 @@ automaticamente. Antes de cambiar `DB_*`, hay que reemplazar:
 - `VALUES(columna)` dentro de upserts por `EXCLUDED.columna`.
 - Triggers MySQL con `DELIMITER` por funciones `plpgsql` y `CREATE TRIGGER`.
 
-Los placeholders `%s` son compatibles con `psycopg`, pero los cursores
-`dictionary=True` deben reemplazarse por `dict_row` u otra fila tipada.
+La capa `utils/database.py` adapta `dictionary=True` a `dict_row`. El nuevo
+código puede usar directamente `conn.cursor(row_factory=dict_row)`.
 
 ## Triggers y auditoria
 
-El trigger `trg_estudiantes_before_delete` debe reescribirse en PostgreSQL
-como una funcion `plpgsql`. Debe conservar estas responsabilidades:
+El trigger PostgreSQL `trg_estudiantes_before_delete`, definido en
+`scripts/database/trigger_delete_estudiante.sql`, conserva estas
+responsabilidades:
 
 1. Contar las relaciones del estudiante eliminado.
 2. Insertar una entrada en `log_registro`.
-3. Usar los valores de contexto de la aplicacion para usuario, IP y agente.
+3. Usar los valores transaccionales `app.user_id`, `app.ip`, `app.agent` y
+   los conteos previos de `app.student_delete_counts`.
 4. Ejecutarse antes del `DELETE`.
 
 No se debe copiar literalmente la sintaxis MySQL del backup.
 
 ## Migracion segura de la aplicacion
 
-Durante la transicion, mantener dos configuraciones:
+El backend admite `DB_*` y, como alternativa, las variables `POSTGRES_*`:
 
 ```env
-DB_ENGINE=mysql
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-
-POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=anexo_de_datos
 POSTGRES_USER=docstry_app
-POSTGRES_PASSWORD=
+POSTGRES_PASSWORD=change_me_locally
 ```
 
-La aplicacion debe cambiar a PostgreSQL solo despues de que pasen las pruebas
-de autenticacion, estudiantes, asistencia, calificaciones, comunicados,
-reportes y logs. MySQL debe conservarse como respaldo de lectura hasta cerrar
-la validacion.
+La conexion de la aplicacion ya apunta a PostgreSQL. La instancia migrada y el
+comportamiento funcional de todas las rutas deben validarse antes de retirar
+los respaldos historicos de MySQL.
 
 ## Criterio de finalizacion
 

@@ -123,10 +123,28 @@ def api_estudiante_eliminar(id):
         conn = get_db()
         cursor = conn.cursor()
 
-        # Variables de sesion para el trigger de auditoria
-        cursor.execute("SET @app_user_id = %s", (session.get('user_id'),))
-        cursor.execute("SET @app_ip = %s", (request.remote_addr,))
-        cursor.execute("SET @app_agent = %s", (request.headers.get('User-Agent'),))
+        # Contexto transaccional que consume el trigger PostgreSQL de auditoria.
+        cursor.execute("SELECT set_config('app.user_id', %s, true)", (str(session.get('user_id') or ''),))
+        cursor.execute("SELECT set_config('app.ip', %s, true)", (request.remote_addr or '',))
+        cursor.execute("SELECT set_config('app.agent', %s, true)", (request.headers.get('User-Agent') or '',))
+
+        # Guardar los conteos antes de limpiar las tablas con claves foraneas.
+        cursor.execute("""
+            SELECT json_build_object(
+                'detalle_asistencia', (SELECT COUNT(*) FROM detalle_asistencia WHERE id_estudiante = %s),
+                'asistencia', (SELECT COUNT(*) FROM asistencia WHERE id_estudiante = %s),
+                'asistencias_por_periodo', (SELECT COUNT(*) FROM asistencias_por_periodo WHERE id_estudiante = %s),
+                'justificantes_ausencia', (SELECT COUNT(*) FROM justificantes_ausencia WHERE id_estudiante = %s),
+                'reportes_inasistencias', (SELECT COUNT(*) FROM reportes_inasistencias WHERE id_estudiante = %s),
+                'observador', (SELECT COUNT(*) FROM observador WHERE id_estudiante = %s),
+                'notas', (SELECT COUNT(*) FROM notas WHERE id_estudiante = %s)
+            )::text
+        """, (id, id, id, id, id, id, id))
+        relation_counts = cursor.fetchone()[0]
+        cursor.execute(
+            "SELECT set_config('app.student_delete_counts', %s, true)",
+            (relation_counts,)
+        )
 
         dependencias = [
             "DELETE FROM detalle_asistencia WHERE id_estudiante = %s",

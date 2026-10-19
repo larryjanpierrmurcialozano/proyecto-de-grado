@@ -51,10 +51,10 @@ C:\Program Files\LibreOffice\program
 
 ---
 
-# Respaldo y restauracion de base de datos (MySQL)
+# Respaldo y restauracion historica de MySQL
 
-Este proyecto usa MySQL/MariaDB. Para mover la base de datos con datos a otro equipo,
-genera un respaldo .sql en el equipo actual y restauralo en el nuevo equipo.
+La aplicacion activa usa PostgreSQL. Estas instrucciones solo aplican para
+exportar o restaurar una base MySQL/MariaDB antigua antes de migrarla.
 
 ## 1) Exportar la base de datos (equipo actual)
 

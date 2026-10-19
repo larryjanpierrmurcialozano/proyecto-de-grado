@@ -3,8 +3,10 @@
 ## Estado actual
 
 El proyecto es un monolito Flask modular. `backend/iniciador.py` registra los
-blueprints y sirve el frontend estatico desde `frontend/`. La base de datos se
-conecta mediante `backend/utils/database.py`.
+blueprints y sirve el frontend estatico desde `frontend/`. La aplicacion Flask
+se conecta a PostgreSQL mediante `backend/utils/database.py` y `psycopg 3`.
+Los respaldos MySQL existentes son fuentes historicas de migracion y no son
+usados por las rutas activas.
 
 La primera reorganizacion separa los recursos por responsabilidad:
 
@@ -12,7 +14,7 @@ La primera reorganizacion separa los recursos por responsabilidad:
 - `backend/utils/`: conexion, helpers y constantes compartidas.
 - `frontend/`: templates, JavaScript, CSS e imagenes.
 - `storage/uploads/`: archivos subidos por usuarios.
-- `storage/backups/`: respaldos de MySQL, no versionados.
+- `storage/backups/`: respaldos de bases de datos, no versionados.
 - `scripts/database/`: herramientas de exportacion e importacion.
 - `scripts/legacy/`: scripts antiguos que no deben ejecutarse por defecto.
 - `docs/`: instalacion, correo, periodos y arquitectura.

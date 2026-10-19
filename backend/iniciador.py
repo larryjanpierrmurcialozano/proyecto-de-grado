@@ -52,9 +52,20 @@ app = Flask(
     static_url_path='/static'
 )
 
-CORS(app, origins=os.getenv('CORS_ORIGINS', 'http://127.0.0.1:5000,http://localhost:5000').split(','),
-     supports_credentials=True)
-app.secret_key = os.getenv('SECRET_KEY', 'dev_key_cambiar_en_produccion')
+CORS(app, origins=[origin.strip() for origin in os.getenv(
+    'CORS_ORIGINS', 'http://127.0.0.1:5000,http://localhost:5000'
+).split(',') if origin.strip()], supports_credentials=True)
+
+APP_ENV = os.getenv('APP_ENV', 'development').lower()
+secret_key = os.getenv('SECRET_KEY')
+if APP_ENV == 'production' and not secret_key:
+    raise RuntimeError('SECRET_KEY es obligatorio cuando APP_ENV=production')
+app.secret_key = secret_key or 'dev_key_cambiar_en_produccion'
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_SECURE=(APP_ENV == 'production'),
+)
 app.config['UPLOAD_FOLDER'] = UPLOAD_DIR
 
 # Limpieza automatica: cierra conexiones DB que las rutas no cerraron

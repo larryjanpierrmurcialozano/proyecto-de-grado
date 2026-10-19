@@ -46,7 +46,6 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # Mapeo de nombres de importación (código) a nombres de paquetes en (pip)
 PACKAGE_MAPPING = {
-    "mysql": "mysql-connector-python",
     "googleapiclient": "google-api-python-client",
     "dotenv": "python-dotenv",
     "bs4": "beautifulsoup4",
