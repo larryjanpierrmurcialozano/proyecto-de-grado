@@ -354,9 +354,9 @@ def api_asistencia_guardar():
             conn.close()
             return bloqueo
 
-        # Obtener o crear plantilla para este docente/materia/periodo
+        # asistencias_diarias.id_plantilla referencia plantillas_docente en PostgreSQL.
         cursor.execute("""
-            SELECT id_plantilla FROM plantillas_asistencias
+            SELECT id_plantilla FROM plantillas_docente
             WHERE id_usuario = %s AND id_materia = %s AND id_periodo = %s
             LIMIT 1
         """, (user_id, materia_id, periodo_id))
@@ -369,7 +369,7 @@ def api_asistencia_guardar():
             nombre_mat = mat['nombre_materia'] if mat else 'Materia'
 
             cursor.execute("""
-                INSERT INTO plantillas_asistencias (id_usuario, nombre_plantilla, descripcion, id_materia, id_periodo)
+                INSERT INTO plantillas_docente (id_usuario, nombre_plantilla, descripcion, id_materia, id_periodo)
                 VALUES (%s, %s, %s, %s, %s)
             """, (user_id, f'Asistencia {nombre_mat}', f'Control de asistencia - {nombre_mat}', materia_id, periodo_id))
             conn.commit()
@@ -377,23 +377,26 @@ def api_asistencia_guardar():
         else:
             id_plantilla = plantilla['id_plantilla']
 
-        # Buscar sesión existente
+        # Reutilizar por la clave unica real de PostgreSQL. Esto tambi?n
+        # repara sesiones anteriores cuyo estado qued? NULL.
         cursor.execute("""
-            SELECT id_asistencia_diaria FROM asistencias_diarias
-            WHERE id_grupo = %s AND id_materia = %s AND fecha_registro = %s AND estado = 'activa'
-            LIMIT 1
-        """, (grupo_id, materia_id, fecha))
+            INSERT INTO asistencias_diarias (id_plantilla, id_materia, id_docente, id_grupo, fecha_registro, estado)
+            VALUES (%s, %s, %s, %s, %s, 'activa')
+            ON CONFLICT (id_plantilla, id_materia, fecha_registro) DO UPDATE SET
+                id_docente = EXCLUDED.id_docente,
+                estado = 'activa'
+            WHERE asistencias_diarias.id_grupo = EXCLUDED.id_grupo
+            RETURNING id_asistencia_diaria
+        """, (id_plantilla, materia_id, user_id, grupo_id, fecha))
         sesion = cursor.fetchone()
-
         if not sesion:
-            cursor.execute("""
-                INSERT INTO asistencias_diarias (id_plantilla, id_materia, id_docente, id_grupo, fecha_registro)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (id_plantilla, materia_id, user_id, grupo_id, fecha))
-            conn.commit()
-            id_sesion = cursor.lastrowid
-        else:
-            id_sesion = sesion['id_asistencia_diaria']
+            cursor.close()
+            conn.close()
+            return jsonify({
+                'error': 'Ya existe una sesión de esta materia y fecha para otro grupo. No se modificaron sus datos.'
+            }), 409
+        id_sesion = sesion['id_asistencia_diaria']
+        conn.commit()
 
         # Insertar/actualizar detalle por cada estudiante
         guardados = 0
@@ -436,7 +439,7 @@ def api_asistencia_guardar():
         _recalcular_asistencias_periodo(cursor, conn, ids_estudiantes, materia_id, periodo_id, grupo_id)
 
         # Generar/actualizar reportes de inasistencia si corresponde
-        _actualizar_reportes_inasistencia(cursor, conn, ids_estudiantes, materia_id, periodo_id)
+        _actualizar_reportes_inasistencia(cursor, conn, ids_estudiantes, materia_id, periodo_id, grupo_id)
 
         cursor.close()
         conn.close()
@@ -456,7 +459,9 @@ def _recalcular_asistencias_periodo(cursor, conn, ids_estudiantes, materia_id, p
         cursor.execute("""
             SELECT
                 COUNT(*) FILTER (WHERE da.asistio = 'presente') as presencias,
-                COUNT(*) FILTER (WHERE da.asistio = 'ausente' AND NOT EXISTS (
+                COUNT(*) FILTER (
+                    WHERE da.asistio = 'ausente'
+                    AND NOT EXISTS (
                         SELECT 1
                         FROM asistencia a
                         JOIN justificantes_ausencia ja ON ja.id_asistencia = a.id_asistencia
@@ -466,7 +471,7 @@ def _recalcular_asistencias_periodo(cursor, conn, ids_estudiantes, materia_id, p
                             AND a.fecha_asistencia = ad.fecha_registro
                             AND ja.aprobado = TRUE
                     )
-                )) as ausencias,
+                ) as ausencias,
                 COUNT(*) FILTER (WHERE da.asistio = 'tardio') as tardios,
                 COUNT(*) FILTER (WHERE da.asistio = 'no_registrado') as no_reg,
                 COUNT(*) as total
@@ -514,11 +519,11 @@ def _recalcular_asistencias_periodo(cursor, conn, ids_estudiantes, materia_id, p
     conn.commit()
 
 
-def _actualizar_reportes_inasistencia(cursor, conn, ids_estudiantes, materia_id, periodo_id):
-    """Genera o actualiza reportes de inasistencia cuando un estudiante supera el 20% de ausencias."""
+def _actualizar_reportes_inasistencia(cursor, conn, ids_estudiantes, materia_id, periodo_id, grupo_id):
+    """Actualiza el total de ausencias y su distribucion entre justificadas y no justificadas."""
     for id_est in ids_estudiantes:
         cursor.execute("""
-            SELECT total_presencias, total_ausencias, total_clases_programadas, porcentaje_asistencia
+            SELECT total_ausencias, total_clases_programadas
             FROM asistencias_por_periodo
             WHERE id_estudiante = %s AND id_materia = %s AND id_periodo = %s
         """, (id_est, materia_id, periodo_id))
@@ -526,36 +531,58 @@ def _actualizar_reportes_inasistencia(cursor, conn, ids_estudiantes, materia_id,
         if not row:
             continue
 
-        total = int(row['total_clases_programadas'] or 0)
-        ausencias = int(row['total_ausencias'] or 0)
-        pct_inasist = (ausencias / total * 100) if total > 0 else 0
-        es_critica = pct_inasist > 20
+        sin_justificar = int(row['total_ausencias'] or 0)
+        total_clases = int(row['total_clases_programadas'] or 0)
 
-        if ausencias > 0:
-            # reportes_inasistencias no tiene UNIQUE KEY → usar SELECT + INSERT/UPDATE
+        cursor.execute("""
+            SELECT COUNT(DISTINCT da.id_detalle_asistencia) AS justificadas
+            FROM detalle_asistencia da
+            JOIN asistencias_diarias ad ON ad.id_asistencia_diaria = da.id_asistencia_diaria
+            JOIN asistencia a ON a.id_estudiante = da.id_estudiante
+                AND a.id_grupo = ad.id_grupo
+                AND a.id_periodo = %s
+                AND a.fecha_asistencia = ad.fecha_registro
+            JOIN justificantes_ausencia ja ON ja.id_asistencia = a.id_asistencia
+            WHERE da.id_estudiante = %s
+                AND ad.id_materia = %s
+                AND ad.id_grupo = %s
+                AND ad.estado = 'activa'
+                AND da.asistio = 'ausente'
+                AND ja.aprobado IS TRUE
+        """, (periodo_id, id_est, materia_id, grupo_id))
+        justificadas = int((cursor.fetchone() or {}).get('justificadas') or 0)
+
+        total_inasistencias = sin_justificar + justificadas
+        porcentaje = (total_inasistencias / total_clases * 100) if total_clases else 0
+        es_critica = porcentaje > 20
+
+        cursor.execute("""
+            SELECT id_reporte_inasistencia FROM reportes_inasistencias
+            WHERE id_estudiante = %s AND id_materia = %s AND id_periodo = %s
+            LIMIT 1
+        """, (id_est, materia_id, periodo_id))
+        reporte = cursor.fetchone()
+
+        if reporte:
             cursor.execute("""
-                SELECT id_reporte_inasistencia FROM reportes_inasistencias
-                WHERE id_estudiante = %s AND id_materia = %s AND id_periodo = %s
-                LIMIT 1
-            """, (id_est, materia_id, periodo_id))
-            reporte_existente = cursor.fetchone()
-
-            if reporte_existente:
-                cursor.execute("""
-                    UPDATE reportes_inasistencias
-                    SET total_inasistencias = %s,
-                        inasistencias_sin_justificar = %s,
-                        porcentaje_inasistencia = %s,
-                        es_critica = %s
-                    WHERE id_reporte_inasistencia = %s
-                """, (ausencias, ausencias, round(pct_inasist, 2), es_critica, reporte_existente['id_reporte_inasistencia']))
-            else:
-                cursor.execute("""
-                    INSERT INTO reportes_inasistencias
-                        (id_estudiante, id_materia, id_periodo, total_inasistencias,
-                         inasistencias_sin_justificar, porcentaje_inasistencia, es_critica)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """, (id_est, materia_id, periodo_id, ausencias, ausencias, round(pct_inasist, 2), es_critica))
+                UPDATE reportes_inasistencias
+                SET total_inasistencias = %s,
+                    inasistencias_sin_justificar = %s,
+                    inasistencias_justificadas = %s,
+                    porcentaje_inasistencia = %s,
+                    es_critica = %s
+                WHERE id_reporte_inasistencia = %s
+            """, (total_inasistencias, sin_justificar, justificadas,
+                  round(porcentaje, 2), es_critica, reporte['id_reporte_inasistencia']))
+        elif total_inasistencias > 0:
+            cursor.execute("""
+                INSERT INTO reportes_inasistencias
+                    (id_estudiante, id_materia, id_periodo, total_inasistencias,
+                     inasistencias_sin_justificar, inasistencias_justificadas,
+                     porcentaje_inasistencia, es_critica)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (id_est, materia_id, periodo_id, total_inasistencias,
+                  sin_justificar, justificadas, round(porcentaje, 2), es_critica))
 
     conn.commit()
 
@@ -722,7 +749,8 @@ def api_asistencia_crear_justificante():
                 conn,
                 [asistencia_row['id_estudiante']],
                 sesion_ctx['id_materia'],
-                asistencia_row['id_periodo']
+                asistencia_row['id_periodo'],
+                sesion_ctx['id_grupo']
             )
 
         cursor.close()
@@ -879,7 +907,8 @@ def api_asistencia_aprobar_justificante(id_justificante):
                 conn,
                 [row['id_estudiante']],
                 row['id_materia'],
-                row['id_periodo']
+                row['id_periodo'],
+                row['id_grupo']
             )
 
         cursor.close()

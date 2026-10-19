@@ -682,7 +682,7 @@ async function renderObservador() {
     content.innerHTML = Helpers.loading();
 
     try {
-        const materiasPromise = (API.getMisMaterias ? API.getMisMaterias() : Promise.resolve({ materias: [] }))
+        const materiasPromise = (API.getMaterias ? API.getMaterias() : Promise.resolve({ materias: [] }))
             .catch(() => ({ materias: [] }));
         const [obsRes, estRes, materiasRes] = await Promise.all([
             API.getObservaciones(),

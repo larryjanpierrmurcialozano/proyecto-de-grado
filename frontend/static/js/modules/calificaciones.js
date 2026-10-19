@@ -210,9 +210,12 @@ const CalificacionesModule = {
         try {
             const res = await API.request(`/api/calificaciones/materias/${grupoId}`);
             this.materias = res.materias || [];
-            selMateria.innerHTML = '<option value="">Seleccionar materia...</option>' +
+            const placeholder = this.materias.length
+                ? 'Seleccionar materia...'
+                : 'No hay materias con docente asignado';
+            selMateria.innerHTML = `<option value="">${placeholder}</option>` +
                 this.materias.map(m => `<option value="${m.id_materia}">${m.nombre_materia}</option>`).join('');
-            selMateria.disabled = false;
+            selMateria.disabled = this.materias.length === 0;
         } catch (error) {
             mostrarAlerta('Error al cargar materias', 'error');
         }

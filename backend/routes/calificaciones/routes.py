@@ -2166,8 +2166,7 @@ def api_calificaciones_grupos(grado_id):
 
 @calificaciones_bp.route('/api/calificaciones/materias/<int:grupo_id>', methods=['GET'])
 def api_calificaciones_materias(grupo_id):
-    """Materias asignadas al grupo (y al docente si es Docente).
-    Fallback a catálogo general si no hay asignaciones específicas."""
+    """Lista materias con asignacion docente activa para el grupo."""
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
@@ -2201,17 +2200,6 @@ def api_calificaciones_materias(grupo_id):
         
         materias = cursor.fetchall() or []
 
-        if not materias:
-            # Fallback: todas las materias del catálogo si no hay asignaciones
-            cursor.execute(
-                """
-                SELECT m.id_materia, m.nombre_materia, m.codigo_materia
-                FROM materias m
-                ORDER BY m.nombre_materia
-                """
-            )
-            materias = cursor.fetchall() or []
-
         cursor.close()
         conn.close()
         return jsonify({'status': 'ok', 'materias': materias}), 200
@@ -2232,6 +2220,23 @@ def api_calificaciones_tabla():
     try:
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
+
+        # Solo se puede abrir el tablero si hay una asignacion docente activa.
+        user_role = str(session.get('user_role') or '').strip().lower()
+        if user_role in ('docente', 'profesor'):
+            cursor.execute(
+                "SELECT 1 FROM asignaciones_docente WHERE id_grupo = %s AND id_materia = %s AND id_usuario = %s AND estado = 'Activa' LIMIT 1",
+                (grupo_id, materia_id, session.get('user_id'))
+            )
+        else:
+            cursor.execute(
+                "SELECT 1 FROM asignaciones_docente WHERE id_grupo = %s AND id_materia = %s AND estado = 'Activa' LIMIT 1",
+                (grupo_id, materia_id)
+            )
+        if not cursor.fetchone():
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'La materia no tiene un docente asignado para este grupo.'}), 404
 
         cursor.execute(
             """

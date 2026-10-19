@@ -507,7 +507,7 @@ async function asistGuardar() {
                 ASIST_REGISTROS[est.id_estudiante].id_asistencia = idAsistenciaLegacy;
             }
         });
-        mostrarAlerta(`Asistencia guardada: ${res.guardados} registro(s)`, 'success');
+        mostrarAlerta(`Asistencia guardada correctamente: ${res.guardados} registro(s)`, 'success');
 
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-save"></i> Guardar Asistencia';
