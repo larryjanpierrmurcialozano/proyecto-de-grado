@@ -3,9 +3,11 @@
 # ════════════════════════════════════════════════════════════════════════════════
 
 from flask import Blueprint, jsonify, request, session
+import psycopg
+import psycopg
 from datetime import datetime
 from utils.database import get_db
-from utils.helpers import _error_interno
+from utils.helpers import _error_interno, log_action, role_required
 
 docentes_bp = Blueprint('docentes', __name__)
 
@@ -59,6 +61,66 @@ def api_docentes_disponibles():
         return _error_interno(e)
 
 
+@docentes_bp.route('/api/docentes/<int:id>/estado', methods=['PATCH'])
+@role_required('admin_server')
+def api_docente_actualizar_estado(current_user, id):
+    """Cambiar el estado de la cuenta de un docente, no el estado de sus asignaciones."""
+    conn = None
+    cursor = None
+    try:
+        data = request.get_json(silent=True) or {}
+        estado = data.get('is_activo')
+        if isinstance(estado, bool):
+            estado_activo = estado
+        elif estado in (1, '1', 'true', 't', 'Activo'):
+            estado_activo = True
+        elif estado in (0, '0', 'false', 'f', 'Inactivo'):
+            estado_activo = False
+        else:
+            return jsonify({'error': 'El estado debe ser Activo o Inactivo'}), 400
+
+        conn = get_db()
+        if conn is None:
+            return jsonify({'error': 'No hay conexión con la base de datos'}), 503
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE usuarios
+            SET is_activo = %s
+            WHERE id_usuario = %s AND id_rol = 4
+            RETURNING is_activo
+        """, (estado_activo, id))
+        resultado = cursor.fetchone()
+        if not resultado:
+            conn.rollback()
+            return jsonify({'error': 'Docente no encontrado'}), 404
+
+        conn.commit()
+        log_action(
+            current_user['id_usuario'], 'UPDATE',
+            f"Estado del docente {id} cambiado a {'Activo' if estado_activo else 'Inactivo'}.",
+            tabla_afectada='usuarios', registro_id=id
+        )
+        return jsonify({'status': 'ok', 'id_usuario': id, 'is_activo': resultado[0]}), 200
+    except Exception as e:
+        if conn:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        return _error_interno(e)
+    finally:
+        if cursor:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
 @docentes_bp.route('/api/docentes/<int:id>/asignaciones', methods=['GET'])
 def api_docente_asignaciones(id):
     """Asignaciones de un docente"""
@@ -66,11 +128,12 @@ def api_docente_asignaciones(id):
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
         cursor.execute("""
-            SELECT a.*, m.nombre_materia, g.nombre_grado
+            SELECT a.*, m.nombre_materia, g.nombre_grado, gr.codigo_grupo
             FROM asignaciones_docente a
             JOIN materias m ON a.id_materia = m.id_materia
             JOIN grados g ON a.id_grado = g.id_grado
-            WHERE a.id_usuario = %s
+            JOIN grupos gr ON a.id_grupo = gr.id_grupo
+            WHERE a.id_usuario = %s AND a.estado = 'Activa'
         """, (id,))
         asignaciones = cursor.fetchall()
         cursor.close()
@@ -82,34 +145,127 @@ def api_docente_asignaciones(id):
 
 @docentes_bp.route('/api/docentes/<int:id>/asignaciones', methods=['POST'])
 def api_docente_guardar_asignaciones(id):
-    """Reemplaza las asignaciones de un docente con la lista enviada"""
+    """Sincroniza asignaciones activas y conserva como inactivas las retiradas."""
+    conn = None
+    cursor = None
     try:
-        data = request.get_json()
-        asignaciones = data.get('asignaciones', [])
+        data = request.get_json(silent=True) or {}
+        asignaciones = data.get('asignaciones')
+        if not isinstance(asignaciones, list):
+            return jsonify({'error': 'El campo asignaciones debe ser una lista'}), 400
+
+        normalizadas = []
+        claves = set()
+        for indice, asignacion in enumerate(asignaciones, start=1):
+            if not isinstance(asignacion, dict):
+                return jsonify({'error': f'La asignación {indice} no es válida'}), 400
+            try:
+                fila = {
+                    'id_materia': int(asignacion['id_materia']),
+                    'id_grado': int(asignacion['id_grado']),
+                    'id_grupo': int(asignacion['id_grupo']),
+                    'año_lectivo': int(asignacion.get('año_lectivo') or datetime.now().year),
+                    'estado': 'Activa'
+                }
+            except (KeyError, TypeError, ValueError):
+                return jsonify({'error': f'La asignación {indice} requiere materia, grado y grupo válidos'}), 400
+            if min(fila['id_materia'], fila['id_grado'], fila['id_grupo']) < 1:
+                return jsonify({'error': f'La asignación {indice} contiene identificadores inválidos'}), 400
+            if fila['estado'] not in ('Activa', 'Inactiva'):
+                return jsonify({'error': f'El estado de la asignación {indice} no es válido'}), 400
+            clave = (fila['id_materia'], fila['id_grado'], fila['id_grupo'])
+            if clave in claves:
+                return jsonify({'error': f'La asignación {indice} está duplicada'}), 400
+            claves.add(clave)
+            normalizadas.append(fila)
 
         conn = get_db()
+        if conn is None:
+            return jsonify({'error': 'No hay conexión con la base de datos'}), 503
         cursor = conn.cursor()
+        cursor.execute("SELECT 1 FROM usuarios WHERE id_usuario = %s AND id_rol = 4", (id,))
+        if not cursor.fetchone():
+            conn.rollback()
+            return jsonify({'error': 'Docente no encontrado'}), 404
 
-        cursor.execute("DELETE FROM asignaciones_docente WHERE id_usuario = %s", (id,))
-
-        for a in asignaciones:
+        # Validar las referencias y la unicidad antes de modificar cualquier asignación.
+        for fila in normalizadas:
             cursor.execute("""
-                INSERT INTO asignaciones_docente (id_usuario, id_materia, id_grado, año_lectivo, estado)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (
-                id,
-                a['id_materia'],
-                a['id_grado'],
-                a.get('año_lectivo', datetime.now().year),
-                a.get('estado', 'Activa')
-            ))
+                SELECT 1
+                FROM materias m, grados g, grupos gr
+                WHERE m.id_materia = %s AND g.id_grado = %s
+                  AND gr.id_grupo = %s AND gr.id_grado = g.id_grado
+            """, (fila['id_materia'], fila['id_grado'], fila['id_grupo']))
+            if not cursor.fetchone():
+                conn.rollback()
+                return jsonify({'error': 'Una materia, grado o grupo no existe, o el grupo no corresponde al grado'}), 400
+            if fila['estado'] == 'Activa':
+                cursor.execute("""
+                    SELECT id_usuario FROM asignaciones_docente
+                    WHERE id_materia = %s AND id_grado = %s AND id_grupo = %s
+                      AND estado = 'Activa' AND id_usuario <> %s
+                    LIMIT 1
+                """, (fila['id_materia'], fila['id_grado'], fila['id_grupo'], id))
+                if cursor.fetchone():
+                    conn.rollback()
+                    return jsonify({'error': 'Ya hay otro docente activo en esa materia, grado y grupo'}), 409
+
+        cursor.execute("""
+            SELECT id_asignacion, id_materia, id_grado, id_grupo
+            FROM asignaciones_docente WHERE id_usuario = %s
+        """, (id,))
+        existentes = cursor.fetchall()
+        deseadas = {(f['id_materia'], f['id_grado'], f['id_grupo']): f for f in normalizadas}
+        existentes_por_clave = {(r[1], r[2], r[3]): r[0] for r in existentes}
+
+        # Mantener filas históricas; pueden estar referenciadas por horarios.
+        for clave, asignacion_id in existentes_por_clave.items():
+            if clave not in deseadas:
+                cursor.execute("UPDATE asignaciones_docente SET estado = 'Inactiva' WHERE id_asignacion = %s", (asignacion_id,))
+
+        for clave, fila in deseadas.items():
+            if clave in existentes_por_clave:
+                cursor.execute("""
+                    UPDATE asignaciones_docente
+                    SET estado = %s, año_lectivo = %s WHERE id_asignacion = %s
+                """, (fila['estado'], fila['año_lectivo'], existentes_por_clave[clave]))
+            else:
+                cursor.execute("""
+                    INSERT INTO asignaciones_docente
+                        (id_usuario, id_materia, id_grado, id_grupo, año_lectivo, estado)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (id, fila['id_materia'], fila['id_grado'], fila['id_grupo'], fila['año_lectivo'], fila['estado']))
 
         conn.commit()
         cursor.close()
         conn.close()
         return jsonify({'status': 'ok'}), 200
+    except psycopg.errors.UniqueViolation:
+        if conn:
+            conn.rollback()
+        return jsonify({'error': 'Ya existe esta asignación o el grupo ya tiene docente para esa materia.'}), 409
+    except psycopg.errors.ForeignKeyViolation:
+        if conn:
+            conn.rollback()
+        return jsonify({'error': 'No se pudo guardar: verifica que el docente, la materia, el grado y el grupo sigan existiendo.'}), 400
     except Exception as e:
-        return _error_interno(e)
+        if conn:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+        if cursor:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+        print(f"[ERROR] No se pudieron guardar asignaciones para docente {id}: {e}")
+        return jsonify({'error': 'No se guardaron las asignaciones. Verifica los datos y revisa el terminal Flask si el problema continúa.'}), 500
 
 
 @docentes_bp.route('/api/docentes/<int:id>/grados-grupos', methods=['GET'])

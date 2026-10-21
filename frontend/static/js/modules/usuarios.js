@@ -81,7 +81,7 @@ async function abrirModalUsuario(id = null) {
             document.getElementById('usuario-email').value = u.correo;
             document.getElementById('usuario-documento').value = u.documento;
             document.getElementById('usuario-rol').value = u.id_rol;
-            document.getElementById('usuario-estado').value = u.is_activo;
+            document.getElementById('usuario-estado').value = normalizarEstadoUsuario(u.is_activo) ? '1' : '0';
         } catch (error) {
             mostrarAlerta('Error al cargar datos del usuario', 'error');
             return;
@@ -104,7 +104,7 @@ document.getElementById('form-usuario').addEventListener('submit', async functio
         correo: document.getElementById('usuario-email').value,
         documento: document.getElementById('usuario-documento').value,
         id_rol: document.getElementById('usuario-rol').value,
-        is_activo: document.getElementById('usuario-estado').value,
+        is_activo: document.getElementById('usuario-estado').value === '1',
         password: document.getElementById('usuario-password').value
     };
 
@@ -123,6 +123,11 @@ document.getElementById('form-usuario').addEventListener('submit', async functio
         mostrarAlerta(error.message || 'Error al guardar usuario', 'error');
     }
 });
+
+function normalizarEstadoUsuario(valor) {
+    return valor === true || valor === 1 || valor === '1' ||
+        valor === 'true' || valor === 't' || valor === 'Activo';
+}
 
 function confirmarEliminacion(id) {
     const modal = document.getElementById('modal-eliminar');

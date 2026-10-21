@@ -5,16 +5,37 @@
 # Versión: 4.0 BETA (Blueprints)
 # ══════════════════════════════════════════════════════════════════════════════
 
-from flask import Flask, jsonify, request, session, send_from_directory
+from flask import Flask, Response, jsonify, request, session, send_from_directory
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 import os, logging, sys
+from urllib.error import HTTPError, URLError
+from urllib.request import Request as UrlRequest, urlopen
 from dotenv import load_dotenv
 import openpyxl
 from openpyxl import *
 # Utilidades compartidas
 from utils.database import db_config, cleanup_db_connections
 from utils.constants import RUTAS_PUBLICAS
+
+CSHARP_PROXY_ROUTES = {
+    'estudiantes': (('/api/estudiantes', {'GET', 'POST', 'PUT', 'DELETE'}),),
+    'academico': (
+        ('/api/grados', {'GET', 'POST', 'PUT', 'DELETE'}),
+        ('/api/grupos', {'GET', 'POST', 'PUT', 'DELETE'}),
+        ('/api/materias', {'GET', 'POST', 'PUT', 'DELETE'}),
+        ('/api/asignaciones-docente', {'POST', 'DELETE'}),
+    ),
+    'docentes': (
+        ('/api/docentes', {'GET'}),
+        ('/api/docente/mis-materias', {'GET'}),
+        ('/api/docente/mi-horario', {'GET'}),
+    ),
+    'horarios': (
+        ('/api/horarios', {'GET', 'POST', 'PUT', 'DELETE'}),
+        ('/api/niveles', {'GET'}),
+    ),
+}
 
 # Blueprints
 from routes.auth.routes import auth_bp
@@ -104,6 +125,72 @@ def verificar_autenticacion():
     if request.path.startswith('/api/') and 'user_id' not in session:
         return jsonify({'error': 'No autenticado'}), 401
     return None
+
+
+@app.before_request
+def proxy_modulos_a_csharp():
+    """Reenvía módulos funcionales permitidos a C# tras validar la sesión Flask."""
+    modules = {
+        module.strip().lower()
+        for module in os.getenv('CSHARP_PROXY_MODULES', '').split(',')
+        if module.strip()
+    }
+    path = request.path
+    if path == '/api/horarios/exportar-pdf':
+        return None
+    route_is_proxied = any(
+        request.method in methods and (path == prefix or path.startswith(prefix + '/'))
+        for module in modules
+        for prefix, methods in CSHARP_PROXY_ROUTES.get(module, ())
+    )
+    if not route_is_proxied:
+        return None
+
+    proxy_secret = os.getenv('CSHARP_PROXY_SECRET', '')
+    if not proxy_secret:
+        app.logger.error('Proxy C# habilitado, pero falta CSHARP_PROXY_SECRET')
+        return jsonify({'error': 'Servicio C# no configurado'}), 503
+
+    api_base = os.getenv('CSHARP_API_URL', 'http://127.0.0.1:5124').rstrip('/')
+    query = request.query_string.decode('latin-1')
+    target = f'{api_base}{path}' + (f'?{query}' if query else '')
+    headers = {
+        'Accept': request.headers.get('Accept', 'application/json'),
+        'X-Docstry-Proxy-Secret': proxy_secret,
+        'X-Authenticated-User-Id': str(session.get('user_id', '')),
+        'X-Authenticated-User-Role': str(session.get('user_role', '')),
+        'X-Authenticated-User-Name': str(session.get('user_name', '')),
+        'X-Authenticated-User-Email': str(session.get('user_email', '')),
+        'X-Forwarded-For': request.remote_addr or '',
+        'User-Agent': request.headers.get('User-Agent', '')
+    }
+    if request.content_type:
+        headers['Content-Type'] = request.content_type
+
+    upstream_request = UrlRequest(
+        target,
+        data=request.get_data() if request.method not in {'GET', 'HEAD'} else None,
+        headers=headers,
+        method=request.method
+    )
+
+    try:
+        with urlopen(upstream_request, timeout=15) as upstream:
+            payload = upstream.read()
+            status = upstream.status
+            content_type = upstream.headers.get('Content-Type')
+    except HTTPError as upstream_error:
+        payload = upstream_error.read()
+        status = upstream_error.code
+        content_type = upstream_error.headers.get('Content-Type')
+    except (URLError, TimeoutError, OSError) as error:
+        app.logger.error('No se pudo contactar el backend C#: %s', error)
+        return jsonify({'error': 'Servicio C# no disponible'}), 502
+
+    response = Response(payload, status=status)
+    if content_type:
+        response.headers['Content-Type'] = content_type
+    return response
 
 @app.errorhandler(404)
 def handle_404(e):

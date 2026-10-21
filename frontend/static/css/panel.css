@@ -1190,10 +1190,20 @@ tr:hover {
 }
 
 .modal-asignar-docente-detalle .modal-footer-inline {
+    display: flex;
     justify-content: flex-start;
+    align-items: center;
+    min-height: 42px;
     background: transparent;
     border-top: none;
     padding: 0.25rem 0 0;
+}
+
+.modal-asignar-docente-detalle .btn-agregar-asignacion {
+    display: inline-flex;
+    visibility: visible;
+    flex: 0 0 auto;
+    min-height: 38px;
 }
 
 .modal-asignar-docente-detalle .asignaciones-temp-header {

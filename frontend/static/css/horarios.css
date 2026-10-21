@@ -40,6 +40,11 @@
     background: linear-gradient(135deg, #fffaf2 0%, #fff4e6 100%);
 }
 
+/* En el horario docente, centrar los días sobre sus respectivas columnas. */
+.horario-table thead th:not(:first-child) {
+    text-align: center;
+}
+
 .horario-filtros .form-group {
     margin: 0 !important;
     min-width: 0 !important;

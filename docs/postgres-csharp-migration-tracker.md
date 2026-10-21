@@ -20,8 +20,8 @@ bloque Python antes de reconstruirlo en C#.
 | Conexion | `utils/database.py` | validado | pendiente | `utils/database.py` |
 | Auth | `routes/auth/` | sintaxis PostgreSQL | en progreso | `routes/auth/README.md`, `backend-csharp/Modules/Auth/` |
 | Usuarios | `routes/usuarios/` | sintaxis PostgreSQL | en progreso | `routes/usuarios/README.md`, `backend-csharp/Modules/Usuarios/` |
-| Estudiantes | `routes/estudiantes/` | sintaxis PostgreSQL | pendiente | `routes/estudiantes/README.md` |
-| Academico | `routes/academico/` | sintaxis PostgreSQL | pendiente | `routes/academico/README.md` |
+| Estudiantes | `routes/estudiantes/` | sintaxis PostgreSQL | en progreso | `routes/estudiantes/README.md`, `backend-csharp/Modules/Estudiantes/` |
+| Academico | `routes/academico/` | sintaxis PostgreSQL | en progreso | `routes/academico/README.md`, `backend-csharp/Modules/Academico/` |
 | Comunicados | `routes/comunicados/` | sintaxis PostgreSQL | pendiente | `routes/comunicados/README.md` |
 | Logs y reportes | `routes/reportes/` | revisar instancia | pendiente | `routes/reportes/README.md` |
 | Asistencia | `routes/asistencia/` | sintaxis PostgreSQL | pendiente | `routes/asistencia/README.md` |

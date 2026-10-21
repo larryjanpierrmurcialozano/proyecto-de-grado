@@ -111,6 +111,13 @@ const API = {
         return this.request('/api/docentes');
     },
 
+    async actualizarEstadoDocente(id, isActivo) {
+        return this.request(`/api/docentes/${id}/estado`, {
+            method: 'PATCH',
+            body: JSON.stringify({ is_activo: Boolean(isActivo) })
+        });
+    },
+
     async getDocenteAsignaciones(id) {
         return this.request(`/api/docentes/${id}/asignaciones`);
     },

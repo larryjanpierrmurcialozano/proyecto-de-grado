@@ -5,6 +5,7 @@
 
 let ASIGNACIONES_DOCENTE_TEMP = [];
 let DOCENTE_SELECCIONADO = null;
+let GRUPOS_DOCENTE_DISPONIBLES = [];
 
 async function renderDocentes() {
     const content = document.getElementById('main-content');
@@ -24,7 +25,19 @@ async function renderDocentes() {
                     <td>${d.correo || '-'}</td>
                     <td>${materias}</td>
                     <td>${Helpers.badgeEstado(d.is_activo)}</td>
-                    <td>${Helpers.botonesAcciones(d.id_usuario, null, 'abrirModalDocente', null)}</td>
+                    <td>
+                        <div class="acciones-btns">
+                            <button class="btn-accion btn-accion-verde" title="Editar asignaciones" onclick="abrirModalDocente(${d.id_usuario})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-accion ${d.is_activo ? 'btn-accion-rojo' : 'btn-accion-verde'}"
+                                title="${d.is_activo ? 'Desactivar usuario' : 'Activar usuario'}"
+                                aria-label="${d.is_activo ? 'Desactivar usuario' : 'Activar usuario'}"
+                                onclick="cambiarEstadoDocente(${d.id_usuario}, ${!d.is_activo})">
+                                <i class="fas ${d.is_activo ? 'fa-user-slash' : 'fa-user-check'}"></i>
+                            </button>
+                        </div>
+                    </td>
                 </tr>
             `;
         }).join('') : '<tr><td colspan="7">' + Helpers.sinDatos('No hay docentes registrados') + '</td></tr>';
@@ -41,6 +54,18 @@ async function renderDocentes() {
     }
 }
 
+async function cambiarEstadoDocente(docenteId, nuevoEstado) {
+    const accion = nuevoEstado ? 'activar' : 'desactivar';
+    if (!confirm(`¿Deseas ${accion} esta cuenta de docente?`)) return;
+    try {
+        await API.actualizarEstadoDocente(docenteId, nuevoEstado);
+        mostrarAlerta(`Cuenta del docente ${nuevoEstado ? 'activada' : 'desactivada'}`, 'success');
+        await renderDocentes();
+    } catch (error) {
+        mostrarAlerta(error.message || 'No se pudo cambiar el estado del docente', 'error');
+    }
+}
+
 async function abrirModalDocente(docenteId = null) {
     const overlay = document.getElementById('modal-asignar-docente');
     const body = document.getElementById('asignar-docente-body');
@@ -48,15 +73,17 @@ async function abrirModalDocente(docenteId = null) {
     body.innerHTML = Helpers.loading();
 
     try {
-        const [docentesRes, gradosRes, materiasRes] = await Promise.all([
+        const [docentesRes, gradosRes, materiasRes, gruposRes] = await Promise.all([
             API.getDocentesDisponibles(),
             API.getGrados(),
-            API.getMaterias()
+            API.getMaterias(),
+            API.getGrupos()
         ]);
 
         const docentes = docentesRes.docentes || [];
         const grados = gradosRes.grados || [];
         const materias = materiasRes.materias || [];
+        GRUPOS_DOCENTE_DISPONIBLES = gruposRes.grupos || [];
 
         if (!docentes.length) {
             body.innerHTML = `
@@ -80,6 +107,8 @@ async function abrirModalDocente(docenteId = null) {
         }).join('');
         const opcionesGrados = grados.map(g => `<option value="${g.id_grado}">${g.nombre_grado}</option>`).join('');
         const opcionesMaterias = materias.map(m => `<option value="${m.id_materia}">${m.nombre_materia}</option>`).join('');
+        const gruposIniciales = GRUPOS_DOCENTE_DISPONIBLES.filter(g => String(g.id_grado) === String(grados[0]?.id_grado));
+        const opcionesGrupos = gruposIniciales.map(g => `<option value="${g.id_grupo}">${g.codigo_grupo}</option>`).join('');
 
         body.innerHTML = `
             <form id="form-asignar-docente">
@@ -89,7 +118,7 @@ async function abrirModalDocente(docenteId = null) {
                     </div>
                     <div>
                         <h3>${docenteEnLista ? `${docenteEnLista.apellido} ${docenteEnLista.nombre}` : 'Selecciona un docente'}</h3>
-                        <p>Organiza grado, materia y estado de la asignación en una sola vista.</p>
+                        <p>Asigna materias a los grupos de este docente.</p>
                     </div>
                 </div>
                 <div class="form-group">
@@ -102,25 +131,22 @@ async function abrirModalDocente(docenteId = null) {
                         <select id="select-grado">${opcionesGrados}</select>
                     </div>
                     <div class="form-group">
+                        <label><i class="fas fa-users"></i> Grupo</label>
+                        <select id="select-grupo" required>${opcionesGrupos}</select>
+                    </div>
+                    <div class="form-group">
                         <label><i class="fas fa-book"></i> Materia</label>
                         <select id="select-materia">${opcionesMaterias}</select>
                     </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-toggle-on"></i> Estado</label>
-                        <select id="select-estado">
-                            <option value="Activa">Activa</option>
-                            <option value="Inactiva">Inactiva</option>
-                        </select>
-                    </div>
                 </div>
-                <div class="modal-footer modal-footer-inline">
-                    <button type="button" class="btn btn-cafe" onclick="agregarAsignacionTemp()">
+                <div class="modal-footer-inline" style="display:flex; visibility:visible; min-height:42px;">
+                    <button type="button" class="btn btn-cafe btn-agregar-asignacion" onclick="agregarAsignacionTemp()">
                         <i class="fas fa-plus"></i> Agregar asignación
                     </button>
                 </div>
                 <div class="asignaciones-temp-header">
                     <h4><i class="fas fa-list"></i> Asignaciones actuales</h4>
-                    <span>Revisa o elimina antes de guardar</span>
+                    <span>Quita las asignaciones que ya no correspondan y guarda los cambios</span>
                 </div>
                 <div id="lista-asignaciones-temp" class="asignaciones-temp-list">
                     ${Helpers.sinDatos('Aún no agregas asignaciones')}
@@ -141,6 +167,8 @@ async function abrirModalDocente(docenteId = null) {
             cargarAsignacionesDocenteSeleccionado();
         });
 
+        document.getElementById('select-grado').addEventListener('change', actualizarGruposDocente);
+
         document.getElementById('form-asignar-docente').addEventListener('submit', guardarAsignacionesDocente);
 
         await cargarAsignacionesDocenteSeleccionado();
@@ -159,12 +187,14 @@ async function cargarAsignacionesDocenteSeleccionado() {
     }
     try {
         const res = await API.getDocenteAsignaciones(DOCENTE_SELECCIONADO);
-        ASIGNACIONES_DOCENTE_TEMP = (res.asignaciones || []).map(a => ({
-            id_grado: a.id_grado,
+        ASIGNACIONES_DOCENTE_TEMP = (res.asignaciones || []).filter(a => a.estado === 'Activa').map(a => ({
+            id_grado: Number(a.id_grado),
             nombre_grado: a.nombre_grado,
-            id_materia: a.id_materia,
+            id_grupo: Number(a.id_grupo),
+            codigo_grupo: a.codigo_grupo,
+            id_materia: Number(a.id_materia),
             nombre_materia: a.nombre_materia,
-            estado: a.estado || 'Activa'
+            estado: 'Activa'
         }));
         renderAsignacionesTemp();
     } catch (error) {
@@ -177,25 +207,31 @@ async function cargarAsignacionesDocenteSeleccionado() {
 
 function agregarAsignacionTemp() {
     const gradoSelect = document.getElementById('select-grado');
+    const grupoSelect = document.getElementById('select-grupo');
     const materiaSelect = document.getElementById('select-materia');
-    const estado = document.getElementById('select-estado').value;
-    const grado = gradoSelect.value;
-    const materia = materiaSelect.value;
+    const grado = Number(gradoSelect.value);
+    const grupo = Number(grupoSelect.value);
+    const materia = Number(materiaSelect.value);
 
-    if (!grado || !materia) return;
+    if (!grado || !grupo || !materia) {
+        mostrarAlerta('Selecciona grado, grupo y materia', 'error');
+        return;
+    }
 
-    const existe = ASIGNACIONES_DOCENTE_TEMP.some(a => a.id_grado === grado && a.id_materia === materia);
+    const existe = ASIGNACIONES_DOCENTE_TEMP.some(a => a.id_grupo === grupo && a.id_materia === materia);
     if (existe) {
-        mostrarAlerta('Ya agregaste esa combinación grado/materia', 'info');
+        mostrarAlerta('Ya agregaste esa combinación grupo/materia', 'info');
         return;
     }
 
     ASIGNACIONES_DOCENTE_TEMP.push({
         id_grado: grado,
         nombre_grado: gradoSelect.options[gradoSelect.selectedIndex].text,
+        id_grupo: grupo,
+        codigo_grupo: grupoSelect.options[grupoSelect.selectedIndex].text,
         id_materia: materia,
         nombre_materia: materiaSelect.options[materiaSelect.selectedIndex].text,
-        estado
+        estado: 'Activa'
     });
     renderAsignacionesTemp();
 }
@@ -209,17 +245,25 @@ function renderAsignacionesTemp() {
     cont.innerHTML = ASIGNACIONES_DOCENTE_TEMP.map((a, idx) => `
         <div class="asignacion-temp-card">
             <div class="asignacion-temp-texto">
-                <strong>${a.nombre_grado || ('Grado ' + a.id_grado)}</strong>
+                <strong>${a.nombre_grado || ('Grado ' + a.id_grado)} · ${a.codigo_grupo || ('Grupo ' + a.id_grupo)}</strong>
                 <span>${a.nombre_materia || ('Materia ' + a.id_materia)}</span>
             </div>
             <div class="asignacion-temp-meta">
-                <span class="badge badge-cafe">${a.estado}</span>
                 <button type="button" class="btn-quitar-asignacion-temp" onclick="quitarAsignacionTemp(${idx})" aria-label="Quitar asignación">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
         </div>
     `).join('');
+}
+
+function actualizarGruposDocente() {
+    const gradoSelect = document.getElementById('select-grado');
+    const grupoSelect = document.getElementById('select-grupo');
+    if (!gradoSelect || !grupoSelect) return;
+    const grupos = GRUPOS_DOCENTE_DISPONIBLES.filter(g => String(g.id_grado) === String(gradoSelect.value));
+    grupoSelect.innerHTML = grupos.map(g => `<option value="${g.id_grupo}">${g.codigo_grupo}</option>`).join('');
+    grupoSelect.disabled = grupos.length === 0;
 }
 
 function quitarAsignacionTemp(idx) {
@@ -233,12 +277,24 @@ async function guardarAsignacionesDocente(e) {
         mostrarAlerta('Selecciona un docente', 'error');
         return;
     }
+    const botonGuardar = e.submitter || document.querySelector('#form-asignar-docente button[type="submit"]');
+    const textoOriginal = botonGuardar?.innerHTML;
+    if (botonGuardar) {
+        botonGuardar.disabled = true;
+        botonGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    }
     try {
         await API.guardarAsignacionesDocente(DOCENTE_SELECCIONADO, ASIGNACIONES_DOCENTE_TEMP);
         mostrarAlerta('Asignaciones guardadas', 'success');
         cerrarModal('modal-asignar-docente');
-        renderDocentes();
+        await renderDocentes();
     } catch (error) {
-        mostrarAlerta(error.message || 'No se pudo guardar', 'error');
+        console.error('Error guardando asignaciones del docente', error);
+        mostrarAlerta(error.message || 'No se guardaron los cambios. Revisa los datos e inténtalo de nuevo.', 'error');
+    } finally {
+        if (botonGuardar) {
+            botonGuardar.disabled = false;
+            botonGuardar.innerHTML = textoOriginal;
+        }
     }
 }

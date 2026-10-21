@@ -84,6 +84,15 @@ def api_usuario_actualizar(id_usuario):
     """Actualizar usuario"""
     try:        
         data = request.get_json()
+        estado = data.get('is_activo')
+        if isinstance(estado, bool):
+            estado_activo = estado
+        elif estado in (1, '1', 'true', 't', 'Activo'):
+            estado_activo = True
+        elif estado in (0, '0', 'false', 'f', 'Inactivo'):
+            estado_activo = False
+        else:
+            return jsonify({'error': 'El estado del usuario debe ser Activo o Inactivo'}), 400
         conn = get_db()
         cursor = conn.cursor()
 
@@ -102,7 +111,7 @@ def api_usuario_actualizar(id_usuario):
             data['correo'],
             data['documento'],
             data['id_rol'],
-            data['is_activo']
+            estado_activo
         ]
 
 
