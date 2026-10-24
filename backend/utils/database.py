@@ -14,7 +14,7 @@ db_config = {
     'host': os.getenv('DB_HOST', os.getenv('POSTGRES_HOST', 'localhost')),
     'port': int(os.getenv('DB_PORT', os.getenv('POSTGRES_PORT', 5432))),
     'user': os.getenv('DB_USER', os.getenv('POSTGRES_USER', 'docstry_app')),
-    'password': os.getenv('DB_PASSWORD', os.getenv('POSTGRES_PASSWORD', 'change_me_locally')),
+    'password': os.getenv('DB_PASSWORD', os.getenv('POSTGRES_PASSWORD', '1234shanyis4321')),
     'database': os.getenv('DB_NAME', os.getenv('POSTGRES_DB', 'anexo_de_datos')),
     'sslmode': os.getenv('DB_SSLMODE', 'prefer')
 }

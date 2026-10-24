@@ -1,30 +1,30 @@
 # ProyectoGrado.Api
 
 Primera base ASP.NET Core para migrar progresivamente las rutas Flask a C#.
-Este proyecto funciona en paralelo: no reemplaza todavía `backend/`.
+Este proyecto funciona en paralelo: no reemplaza todavÃ­a `backend/`.
 
 ## Slice implementado
 
-- `GET /api/health`: comprueba la conexión al PostgreSQL de Docker.
+- `GET /api/health`: comprueba la conexiÃ³n al PostgreSQL de Docker.
 - `GET /api/usuarios`: lista usuarios con su rol.
 - `GET /api/usuarios/{id}`: obtiene el detalle de un usuario.
 - `GET /api/roles`: lista roles.
 - `GET /api/auth/profile`: obtiene el perfil autenticado.
-- `POST /api/auth/login`: inicia sesión con cookie HttpOnly.
+- `POST /api/auth/login`: inicia sesiÃ³n con cookie HttpOnly.
 - `POST /api/auth/register`: registra un usuario con rol Profesor.
-- `GET /api/auth/check`: comprueba la cookie de sesión.
-- `POST /api/auth/change-password`: cambia la contraseña verificando la actual.
-- `POST /api/auth/logout`: elimina la cookie de sesión.
+- `GET /api/auth/check`: comprueba la cookie de sesiÃ³n.
+- `POST /api/auth/change-password`: cambia la contraseÃ±a verificando la actual.
+- `POST /api/auth/logout`: elimina la cookie de sesiÃ³n.
 - `POST /api/usuarios`: crea un usuario.
 - `PUT /api/usuarios/{id}`: actualiza un usuario.
 - `DELETE /api/usuarios/{id}`: elimina un usuario.
 
-## Módulo académico en paralelo
+## MÃ³dulo acadÃ©mico en paralelo
 
-Se agregó `Modules/Academico/` para grados, grupos, materias y asignaciones de
+Se agregÃ³ `Modules/Academico/` para grados, grupos, materias y asignaciones de
 docentes. Conserva los contratos de las rutas Flask correspondientes y requiere
-autenticación mediante la cookie de C# cuando se ejecuta directamente en el
-puerto de ASP.NET Core. Flask continúa atendiendo las URLs del frontend; sus
+autenticaciÃ³n mediante la cookie de C# cuando se ejecuta directamente en el
+puerto de ASP.NET Core. Flask continÃºa atendiendo las URLs del frontend; sus
 blueprints no se han cambiado ni eliminado.
 
 - Grados: `GET/POST /api/grados`, `GET/PUT/DELETE /api/grados/{id}` y
@@ -37,82 +37,90 @@ blueprints no se han cambiado ni eliminado.
   `DELETE /api/asignaciones-docente/{id}`.
 
 Este es un despliegue paralelo, no un cambio de destino desde Flask. La
-integración Flask -> C# queda pendiente hasta acordar el paso seguro de sesión
+integraciÃ³n Flask -> C# queda pendiente hasta acordar el paso seguro de sesiÃ³n
 y roles entre servicios.
 
-## Módulo Estudiantes en paralelo
+## MÃ³dulo Estudiantes en paralelo
 
-Se agregó `Modules/Estudiantes/` para el CRUD que existe en Flask. Mantiene las
-cinco rutas `/api/estudiantes` y exige cookie de autenticación C# al llamarlas
-directamente. La eliminación ejecuta la limpieza de relaciones dentro de una
-transacción y pasa usuario, IP, agente y conteos al trigger de auditoría
+Se agregÃ³ `Modules/Estudiantes/` para el CRUD que existe en Flask. Mantiene las
+cinco rutas `/api/estudiantes` y exige cookie de autenticaciÃ³n C# al llamarlas
+directamente. La eliminaciÃ³n ejecuta la limpieza de relaciones dentro de una
+transacciÃ³n y pasa usuario, IP, agente y conteos al trigger de auditorÃ­a
 PostgreSQL.
 
 ## Consultas de Docentes
 
-`Modules/Docentes/` implementa las consultas de administración y del panel del
+`Modules/Docentes/` implementa las consultas de administraciÃ³n y del panel del
 docente. Lee docente disponibles, asignaciones, grados/grupos, materias propias
 y horario, reutilizando el identificador de usuario validado por Flask al
 reenviar las solicitudes.
 
 ## Horarios
 
-`Modules/Horarios/` contiene consulta con filtros, detalle, altas, edición,
-eliminación, asignaciones por grupo/grado y catálogo de niveles. El alta valida
+`Modules/Horarios/` contiene consulta con filtros, detalle, altas, ediciÃ³n,
+eliminaciÃ³n, asignaciones por grupo/grado y catÃ¡logo de niveles. El alta valida
 cruces de horario del grupo y del docente; las operaciones de escritura intentan
-registrar la acción en `log_registro` sin revertir el cambio si ese registro
-auxiliar no está disponible. `POST /api/horarios/exportar-pdf` permanece en
+registrar la acciÃ³n en `log_registro` sin revertir el cambio si ese registro
+auxiliar no estÃ¡ disponible. `POST /api/horarios/exportar-pdf` permanece en
 Flask para preservar el formato institucional.
 
 Al ejecutar C# con `dotnet run`, cada solicitud se registra en consola con
-método, ruta, código HTTP y duración. No se registran cuerpos de solicitud ni
-contraseñas.
+mÃ©todo, ruta, cÃ³digo HTTP y duraciÃ³n. No se registran cuerpos de solicitud ni
+contraseÃ±as.
 
-Las consultas usan parámetros PostgreSQL (`$1`) y no interpolan valores
-provenientes de la solicitud. Las contraseñas usan BCrypt compatible con los
+Las consultas usan parÃ¡metros PostgreSQL (`$1`) y no interpolan valores
+provenientes de la solicitud. Las contraseÃ±as usan BCrypt compatible con los
 hashes existentes en la base migrada.
 
 ## Ejecutar
 
-Desde la raíz del repositorio:
+Desde la raÃ­z del repositorio:
 
 ```powershell
 dotnet run --project backend-csharp\ProyectoGrado.Api.csproj
 ```
 
-La cadena de conexión está en `appsettings.json` solo como configuración local
-de desarrollo. Para otros entornos se debe usar
-`ConnectionStrings__Postgres` como variable de entorno.
+La cadena base estÃ¡ en `appsettings.json` sin contraseÃ±a. En desarrollo, la
+contraseÃ±a se guarda fuera del repositorio mediante .NET User Secrets:
 
-## Estado de migración
+```powershell
+dotnet user-secrets set "ConnectionStrings:Postgres" `
+  "Host=localhost;Port=5432;Database=anexo_de_datos;Username=docstry_app;Password=TU_CONTRASENA" `
+  --project backend-csharp\ProyectoGrado.Api.csproj
+```
+
+Para otros entornos se debe usar la variable de entorno
+`ConnectionStrings__Postgres`.
+
+## Estado de migraciÃ³n
 
 Este slice ya puede probarse en paralelo con Flask. La cookie de C# es
-independiente de la sesión Flask, por lo que todavía no se debe cambiar el
+independiente de la sesiÃ³n Flask, por lo que todavÃ­a no se debe cambiar el
 frontend global ni apagar Flask. Antes del corte se deben validar permisos de
 administrador para eliminaciones, comparar respuestas con Flask y configurar
-CORS/clave de protección de cookies por entorno.
+CORS/clave de protecciÃ³n de cookies por entorno.
 
-## Integración opcional detrás de Flask
+## IntegraciÃ³n opcional detrÃ¡s de Flask
 
-Los módulos Estudiantes, Académico y las consultas GET de Docentes pueden
+Los mÃ³dulos Estudiantes, AcadÃ©mico y las consultas GET de Docentes pueden
 recibir solicitudes reenviadas por Flask sin cambiar las URLs del frontend. La
-opción está apagada por defecto y Flask conserva los blueprints como
-implementación local cuando no se habilita.
+opciÃ³n estÃ¡ apagada por defecto y Flask conserva los blueprints como
+implementaciÃ³n local cuando no se habilita.
 
 Configura en Flask y ASP.NET Core el mismo secreto privado en
 `CSHARP_PROXY_SECRET` y permite `estudiantes` y/o `academico` en
 `CSHARP_PROXY_MODULES` de ambos procesos (separados por coma). En Flask,
-configura además `CSHARP_API_URL` con la dirección del
+configura ademÃ¡s `CSHARP_API_URL` con la direcciÃ³n del
 servidor C# (por defecto `http://127.0.0.1:5124`). Reinicia ambos procesos para
-que lean las variables. C# valida el secreto y solo acepta módulos incluidos
-en su lista de permitidos. Si C# no está disponible durante el proxy, Flask
+que lean las variables. C# valida el secreto y solo acepta mÃ³dulos incluidos
+en su lista de permitidos. Si C# no estÃ¡ disponible durante el proxy, Flask
 responde 502; vaciar `CSHARP_PROXY_MODULES` en Flask restaura el servicio
 directo desde Python.
 
 `estudiantes` enruta el CRUD de estudiantes. `academico` enruta grados, grupos,
 materias y asignaciones de docente. `docentes` enruta sus consultas GET y
 `horarios` enruta CRUD y consultas de datos. `/api/periodos` permanece en Flask
-porque no pertenece al conjunto de endpoints académicos implementado en C#.
+porque no pertenece al conjunto de endpoints acadÃ©micos implementado en C#.
 
 `docentes` enruta por ahora solo consultas GET: lista, disponibles, asignaciones,
 grados/grupos y el panel `mis-materias`/`mi-horario`. La escritura
@@ -120,4 +128,4 @@ grados/grupos y el panel `mis-materias`/`mi-horario`. La escritura
 masiva las asignaciones y usa un contrato anterior que no incluye grupo.
 
 Antes de habilitarlo para usuarios reales, compara en desarrollo las rutas CRUD,
-permisos por rol, efectos de eliminación y auditoría PostgreSQL.
+permisos por rol, efectos de eliminaciÃ³n y auditorÃ­a PostgreSQL.
