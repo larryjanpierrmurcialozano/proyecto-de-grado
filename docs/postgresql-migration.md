@@ -187,7 +187,7 @@ El backend admite `DB_*` y, como alternativa, las variables `POSTGRES_*`:
 POSTGRES_PORT=5432
 POSTGRES_DB=anexo_de_datos
 POSTGRES_USER=docstry_app
-POSTGRES_PASSWORD=change_me_locally
+POSTGRES_PASSWORD=replace_with_a_strong_unique_password
 ```
 
 La conexion de la aplicacion ya apunta a PostgreSQL. La instancia migrada y el

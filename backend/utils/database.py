@@ -10,11 +10,17 @@ from psycopg.rows import dict_row
 
 load_dotenv()
 
+db_password = os.getenv('DB_PASSWORD') or os.getenv('POSTGRES_PASSWORD')
+if not db_password:
+    raise RuntimeError(
+        'Falta DB_PASSWORD o POSTGRES_PASSWORD en el entorno de Flask.'
+    )
+
 db_config = {
     'host': os.getenv('DB_HOST', os.getenv('POSTGRES_HOST', 'localhost')),
     'port': int(os.getenv('DB_PORT', os.getenv('POSTGRES_PORT', 5432))),
     'user': os.getenv('DB_USER', os.getenv('POSTGRES_USER', 'docstry_app')),
-    'password': os.getenv('DB_PASSWORD', os.getenv('POSTGRES_PASSWORD', '1234shanyis4321')),
+    'password': db_password,
     'database': os.getenv('DB_NAME', os.getenv('POSTGRES_DB', 'anexo_de_datos')),
     'sslmode': os.getenv('DB_SSLMODE', 'prefer')
 }
