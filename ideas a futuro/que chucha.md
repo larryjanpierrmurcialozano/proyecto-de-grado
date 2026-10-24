@@ -1,1 +1,0 @@
-a ver, joven mio de mi corazon, ya esta todo corregido, ahora entendemos algo, ahora falta configurar el backend a c# completamente, pero ya toca revisar si el auth ya esta implementado, lo segundo lo hare ahora, por cierto, si ves cosas que son diferentes pues, es que los cambiaste sin darte cuenta, 

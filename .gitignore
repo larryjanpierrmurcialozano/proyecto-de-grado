@@ -17,4 +17,7 @@ backend/.env
 .env
 storage/uploads/
 storage/backups/
+ideasafuturo
 storage/generated/
+scripts/database/
+scripts/legacy/

@@ -1,1 +1,0 @@
-oe, mira al lobo, mirame la pantalla, luego mira la pintura y simplemente observa para refrescarte. si te das cuenta de que algo no funciona, no te compliques 
